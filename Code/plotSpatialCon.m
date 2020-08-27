@@ -1,6 +1,6 @@
 function H = plotSpatialCon(tstep,layer)
 
-if nargin < 1
+if nargin < 2
     layer = 1;
 end
 
@@ -25,7 +25,7 @@ end
 np = length(tstep);
 col = 4;
 row = np;
-%cVal = 0.5e-4;
+cVal = 0.2;
 m = reshape(measurement,nd,nt);
 A=dir('simulatedDataIter*.mat');
 if ~isempty(A) % plot prior, posterior and measurement
@@ -61,7 +61,7 @@ if ~isempty(A) % plot prior, posterior and measurement
         data = actnumMask;
         data(data==1) = squeeze(d_ini_mean(:,tstep(I)));
         data = data(:,:,layer);
-        cVal = mean(data(:),'omitnan');
+        %cVal = mean(data(:),'omitnan');
         b = imagesc(data);
         %colormap('bone');
         set(b,'AlphaData',~isnan(data))
@@ -94,7 +94,7 @@ if ~isempty(A) % plot prior, posterior and measurement
         set(gca,'ytick',[])
         K = K + 1;
    
-        if length(cVal) > 1
+        if ~isempty(cVal)
             for J = 1:col
                 set(h(J),'clim',[0,cVal]);
             end
