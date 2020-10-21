@@ -1,9 +1,11 @@
 if ~existfile('setupForEnKF.mat')
     %% results from Erlend
-    load simfullbrainindicator-346x448x61 prm results
+    %load simfullbrainindicator-346x448x61 prm results
     %load simfullbraindisc-346x448x61 disc
+    load trimmedData
     %% calculate contrast
-    contrast=results.Cmat.arterial.im+results.Cmat.venous.im;
+    %contrast=results.Cmat.arterial.im+results.Cmat.venous.im;
+    contrast=Cfine;
     
     %% upscale contrast
     upscaleContrast

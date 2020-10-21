@@ -17,6 +17,10 @@ uc = 6000;
 
 % load "true" solution
 load('initialState.mat','prm','data','options','perfObs','Cfine','nt','nxF','nyF');
+if existfile('Cfinered.mat')
+    load('Cfinered','Cfine')
+end
+
 
 % remove veins
 art = data.arterial.tree.bw;
@@ -137,3 +141,6 @@ elseif strcmp(display,'mae')
     print('-r0',prtFile,'-dpng');
     
 end % display
+
+end
+
