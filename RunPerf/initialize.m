@@ -171,19 +171,26 @@ options.timeEnd=timeEnd;
 
 %chop background
 options.mask = zeros(nx,ny,nz,2);
+options.maskQ = zeros(nx,ny,nz);
 if size(argMax,3)==1
     options.mask(:,:,1,1) = (argMax>1);
     options.mask(:,:,1,2) = (argMax>1);
+    options.maskQ(:,:,1) = (argMax>1);
 else
     options.mask(:,:,:,1) = (argMax>1);
     options.mask(:,:,:,2) = (argMax>1);
+    options.maskQ = (argMax>1);
 end
-options.maskQ = zeros(nx,ny,nz);
-options.maskQ(:,:,1) = (argMax>1);
+
+
 
 delay = 0; % was 13 before CHECK/FIX
 tofArtObserved=(argMax-delay) .* options.mask(:,:,1,1);
-actnum = options.mask(:,:,1,1) + options.mask(:,:,1,2);
+if size(argMax,3)==1
+    actnum = options.mask(:,:,1,1) + options.mask(:,:,1,2);
+else
+    actnum = options.mask(:,:,:,1) + options.mask(:,:,:,2);
+end
 actnum = min(actnum,1);
 options.actnum = reshape(actnum,nn,1);
 
@@ -191,7 +198,8 @@ options.actnum = reshape(actnum,nn,1);
 options.dim = [nx,ny,nz];
 options.statevar=[];
 options.dynamicVar=char('PRESSURE','VEL');
-options.staticVar = char('TRANXART','TRANXVEN','TRANYART','TRANYVEN','TRANZART','TRANZVEN','TRANQ','POROART','POROVEN','POROQ');
+%options.staticVar = char('TRANXART','TRANXVEN','TRANYART','TRANYVEN','TRANZART','TRANZVEN','TRANQ','POROART','POROVEN','POROQ');
+options.staticVar = char('PERMXART','PERMXVEN','PERMYART','PERMYVEN','PERMZART','PERMZVEN','TRANQ','POROART','POROVEN','POROQ');
 options.fieldSize = nn;
 options.useLogPerm = 1;
 options.returnStatic = 1;
@@ -214,7 +222,8 @@ x0=[log(permArtCrs); log(permVenCrs); log(permArtCrs); log(permVenCrs); ...
 kalmanOptions.ensembleSize = 200;
 trueStaticVar = [];
 kalmanOptions.historicalData=1;
-kalmanOptions.staticVarMean = x0';
+tmp=repmat(x0,1,nn)';
+kalmanOptions.staticVarMean = tmp(:);
 kalmanOptions.ignoreUninformativeMeasurements=0;
 kalmanOptions.timespec=options.timespec;
 kalmanOptions.reportTime = prm.reporttimeline;
@@ -228,6 +237,8 @@ obsType = 'concentration';
 if strcmp(obsType,'concentration') % CHECK/FIX
     measurement = reshape(Ccrs,size(Ccrs,1)*size(Ccrs,2)*size(Ccrs,3),size(Ccrs,4));
     measurement = measurement * scalingaif;
+    fullmeasurement=measurement;
+    save('fullMeas','fullmeasurement')
     if getOption(kalmanOptions,'thinobs',0) > 0 
         % thin out to reduce amount of data
         Nr = floor(length(options.time)/kalmanOptions.thinobs);
@@ -398,6 +409,7 @@ disp('trueSolutionSmoother.mat is created.')
 
 % Localization
 kalmanOptions.useLocalization = 1;
+kalmanOptions.useLocalization = 0;
 if getOption(kalmanOptions,'useLocalization',false)
     %kalmanOptions.autoAdaLoc = 1;
     kalmanOptions.denoisingLoc = 1;

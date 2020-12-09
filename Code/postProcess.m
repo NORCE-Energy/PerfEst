@@ -16,7 +16,7 @@ end
 uc = 6000;
 
 % load "true" solution
-load('initialState.mat','prm','data','options','perfObs','Cfine','nt','nxF','nyF');
+load('initialState.mat','prm','data','options','perfObs','nt','nxF','nyF');
 if existfile('Cfinered.mat')
     load('Cfinered','Cfine')
 end

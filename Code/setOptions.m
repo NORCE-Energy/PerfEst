@@ -9,11 +9,12 @@ actnum = options.actnum;
 actnum = actnum(:);
 na = sum(actnum);
 if strcmp(options.staticVar(1,1:4),'TRAN')
-    actnumX = [zeros(1,ny*nz);reshape(options.actnum,nx,ny,nz)];
+    % problems here in 3D
+    actnumX = [zeros(ny,nz);reshape(options.actnum,nx,ny,nz)];
     actnumX = actnumX(:);
     actnumY = [reshape(options.actnum,nx,ny,nz);zeros(nx*nz,1)];
     actnumY = actnumY(:);
-    actnumZ = [zeros(1,nx*ny);reshape(options.actnum,nx,ny,nz)];
+    actnumZ = [zeros(nx,ny);reshape(options.actnum,nx,ny,nz)];
     actnumZ = actnumZ(:);
     naX = sum(actnumX)
     naY = sum(actnumY)
