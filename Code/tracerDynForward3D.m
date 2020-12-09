@@ -15,6 +15,11 @@
 % dtof: filling time for voxel.
 % srcSign: Should be 1.0 for standard config, and -1.0 for cap-bed calc.
 % porVolume:
+% mask:
+% termStruct: layout of external terminals
+% termSrcFlux: volume flux from  external terminals, positive into voxel.
+% termTracerProfile: tracer profiles associated with external terminals,
+%                    only relevant if termSrcFlux>0.
 %
 %%%%Output:
 %
@@ -32,7 +37,7 @@
 %                south=3
 %
 %
-function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,flux,source,tracerBnd,tracerSource,time,tof,dtof,srcSign,porVolume,mask)
+function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,flux,source,tracerBnd,tracerSource,time,tof,dtof,srcSign,porVolume,mask,termStruct,termSrcFlux,termTracerProfile)
   mm = length(time);
   nn = nx*ny*nz;
   upTracer = zeros(nn,mm);
@@ -53,6 +58,12 @@ function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,f
   idUp(:,5) = (indexNatural' - nx*ny) .* (K(:) > 1) - (K(:) == 1).*(nx*(J(:)-1)+I(:));
   idUp(:,6) = (indexNatural' + nx*ny) .* (K(:) < nz) - (K(:) == nz).*(nx*(J(:)-1)+I(:));
   
+  termStructIdx = termStruct.i + nx*(termStruct.j-1) + nx*ny*(termStruct.k-1);
+  termStructEntry = zeros(1,nn);
+  if (size(termSrcFlux,2) > 0)
+    termStructEntry(termStructIdx) = 1:size(termStructIdx,2);
+  end
+   
   for ii = 1:nn
     vxl = tos(ii);
 %     if (vxl==54077)
@@ -80,6 +91,15 @@ function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,f
         fluxUp = fluxUp + tracerUp*flux(vxl,face);
       elseif (flux(vxl,face) < -tol)
         fluxDown = fluxDown - flux(vxl,face);
+      end
+    end
+    
+    if (termStructEntry(vxl)>0)
+      if (termSrcFlux(termStructEntry(vxl)) > 0  && size(termTracerProfile,2) > 0)
+        fluxUp0 = fluxUp0 + termSrcFlux(termStructEntry(vxl));
+        fluxUp = fluxUp + termTracerProfile(termStructEntry(vxl),:)*termSrcFlux(termStructEntry(vxl));
+      elseif (termSrcFlux(termStructEntry(vxl)) < 0)
+        fluxDown = fluxDown - termSrcFlux(termStructEntry(vxl));
       end
     end
     
@@ -123,22 +143,9 @@ function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,f
         DtRes = min(Dt,max(0, dtof(vxl)-(ms-1)*Dt));
         wght = DtRes/Dt;
       
-        diffusion = [.1 .9 .9 .1];
-        %diffusion = [1 1];
-        diffStep = length(diffusion)/2;
-        shiftTau = zeros(1,ms+diffStep);        
-        % forward
-        for I = 1:diffStep
-            shiftTau(ms+I) = diffusion(diffStep+I) * wght;
-        end
-        % backward
-        tauInd = ms;
-        for I = 0:diffStep-1
-            shiftTau(tauInd) = shiftTau(tauInd) + diffusion(diffStep-I) * (1-wght);
-            if tauInd > 1
-                tauInd = tauInd - 1;
-            end
-        end
+        shiftTau = zeros(1,ms+1);
+        shiftTau(ms+1) = wght;
+        shiftTau(ms) = (1-wght);
       end
       
       sampleTau = (1.0/(ms))*ones(1,ms);
@@ -171,7 +178,7 @@ function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,f
 %       volTracer(vxl,:) = dwnTracer(vxl,:);
     end
     
-    end
-  end
+    end %mask
+  end %vxl loop
 
 end
