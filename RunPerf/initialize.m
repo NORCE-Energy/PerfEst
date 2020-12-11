@@ -29,6 +29,8 @@ options.fineMask(argMaxFine>1) = 1;
 % $$$ Cfine = options.fineMask.*Cfine;
 % $$$ perfObs = options.fineMask.*perfObs;
 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % determine the upscale level
 nx = 2;% 158;
@@ -59,6 +61,8 @@ yL = redFakt(2)*prm.fov(2)/1000;
 zL = redFakt(3)*prm.fov(3)/1000; 
 nn=nx*ny*nz;
 
+
+
 %Viscosity CHECK (consistent with paper)
 options.visc0 = 3e-3;
 visc = options.visc0*ones(nx,ny,nz,2); 
@@ -72,6 +76,46 @@ options.kV = 1e-13; % permeability venous (5e-13 in true) (previous value 2e-12)
 %kQ = 3e-9; % permeability capillaries (computed from true alpha 1e-3)
 options.kQ = 1e-7; % permeability capillaries 
 options.pVeins = 0.1; % porosity in veins (same as true)
+
+
+%%% NB NB linjene under m? korrigeres for det som er fjernet
+
+% BigBrain Vener: dim(346 x 448 x 319)
+% % %    211   173    75
+% % %    189   184   126
+% % %    330   192   133
+% % %    176   218   181
+termSink.x=([211 189 330 176]-numIremoved)/redGrid(1)*xL;
+termSink.y=([173 184 192 218]-numJremoved)/redGrid(2)*yL;
+termSink.z=([ 75 126 133 181]-numKremoved)/redGrid(3)*zL;
+termSink.p0=133*10*[1 1 1 1];
+termSink.perm=1e-6*[1 1 1 1];
+    
+% BigBrain Arterier:  dim(346 x 448 x 319)
+% % %    185   180    98
+% % %    171   184   144
+termSrc.x=([185 171]-numIremoved)/redGrid(1)*xL;
+termSrc.y=([180 184]-numJremoved)/redGrid(2)*yL;
+termSrc.z=([ 98 144]-numKremoved)/redGrid(3)*zL;
+termSrc.p0=133*85*[1 1];
+termSrc.perm=1e-6*[1 1];
+
+
+% Terminal sources:
+options.termSink.i=1+floor(nx*termSink.x/xL);
+options.termSink.j=1+floor(ny*termSink.y/yL);
+options.termSink.k=1+floor(nz*termSink.z/zL);
+options.termSink.p0=termSink.p0;
+options.termSink.perm=termSink.perm/options.visc0;
+clear termSink;
+options.termSrc.i=1+floor(nx*termSrc.x/xL);
+options.termSrc.j=1+floor(ny*termSrc.y/yL);
+options.termSrc.k=1+floor(nz*termSrc.z/zL);
+options.termSrc.p0=termSrc.p0;
+options.termSrc.perm=termSrc.perm/options.visc0;
+clear termSrc;
+
+%%% NB options delen m? kanskje flyttes til senere i koden
 
 % the lines below remove some empty parts of the domain:
 data.arterial.tree.bw=data.arterial.tree.bw(numIremoved+1:end-numIendRemoved,numJremoved+1:end-numJendRemoved,numKremoved+1:end-numKendRemoved);
@@ -114,6 +158,10 @@ timeEnd = nt;
 % boundary conditions   FIX/CHECK ( the values found from prm are not coinciding with the paper's values)
 prsArt = prm.tree.arterial.bndpress;  % kPa % 10.6; % mmHg
 prsVen = prm.tree.venous.bndpress; % kPa  %1.6; % mmHg
+
+termSrc.p0=133*85*[1 1];
+termSrc.perm=1e-6*[1 1];
+
 prsValueWestQ1=1000*prsArt;
 prsValueEastQ1=1000*prsArt;
 prsValueSouthQ1=1000*prsArt;
@@ -131,7 +179,7 @@ prsValueUpQ2=1000*prsVen;
 options.noFlowWestQ1 = 1;
 options.noFlowEastQ1 = 1;
 options.noFlowSouthQ1 = 1;
-options.noFlowNorthQ1 = 0;
+options.noFlowNorthQ1 = 1;
 options.noFlowDownQ1 = 1;
 options.noFlowUpQ1 = 1;
 options.noFlowDownQ2 = 1;
@@ -139,7 +187,7 @@ options.noFlowUpQ2 = 1;
 options.noFlowEastQ2=1;
 options.noFlowWestQ2=1;
 options.noFlowSouthQ2 = 1;
-options.noFlowNorthQ2 = 0;
+options.noFlowNorthQ2 = 1;
 
 options.xL=xL;
 options.yL=yL;
