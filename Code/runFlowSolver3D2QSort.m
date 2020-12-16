@@ -89,12 +89,12 @@ while (1) %%% enabel goto hack ...
   
   %tofMaxArt_ = permute(max(tofArt(:,:,:),[],3),[1,2,3])
   
-  if isfield(options,'doCAC')
+  %if isfield(options,'doCAC')
       % disp("### rundFlowSolver3D2QSort: do tracer calculations ###");
-  else
-     disp("### rundFlowSolver3D2QSort: skip tracer calculations ###");
-     break; %%% skip tracer calculations
-  end
+  %else
+  %   disp("### rundFlowSolver3D2QSort: skip tracer calculations ###");
+  %   break; %%% skip tracer calculations
+  %end
   
   %%%Dynamic tracer distribution:
   
@@ -146,10 +146,14 @@ while (1) %%% enabel goto hack ...
   tracerSourceArt = zeros(nn,nTime);
   termTracerProfile = [];
   if (isfield(options,'termSrc') && size(termSrcFlux,1) == size(options.termSrc.i,2))
-    assert(size(gamtab,2) >= nTime-nStart+1, 'gamtab not available')
-    sz=size(termSrcFlux,1);
-    termTracerProfile = repmat(gamtab(1:nTime-nStart+1),sz,1);
-  end 
+      sz=size(termSrcFlux,1);
+      if isfield(options,'empiricalAIF')
+          termTracerProfile = repmat(aifcurve(1:nTime-nStart+1),sz,1);
+      else
+          assert(size(gamtab,2) >= nTime-nStart+1, 'gamtab not available')
+          termTracerProfile = repmat(gamtab(1:nTime-nStart+1),sz,1);
+      end
+  end
   tracerSourceArt = reshape(tracerSourceArt,nn,[]);
   
 %   tofMin=min(tof(:))

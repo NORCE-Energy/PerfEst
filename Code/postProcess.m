@@ -1,4 +1,4 @@
-function [P,N] = postProcess(comp,display)
+function [P,N,P_ms,P_svd,P_true] = postProcess(comp,display)
 
 
 % number of compartments (x,y) to consider

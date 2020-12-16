@@ -29,11 +29,13 @@ options.fineMask(argMaxFine>1) = 1;
 % $$$ Cfine = options.fineMask.*Cfine;
 % $$$ perfObs = options.fineMask.*perfObs;
 
-
+% boundary conditions   FIX/CHECK ( the values found from prm are not coinciding with the paper's values)
+prsArt = prm.tree.arterial.bndpress;  % kPa % 10.6; % mmHg
+prsVen = prm.tree.venous.bndpress; % kPa  %1.6; % mmHg
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % determine the upscale level
-nx = 2;% 158;
+nx = 3;% 158;
 ny = 2; %128;
 nz = 2;
 options.L = [nx,ny,nz];
@@ -88,7 +90,7 @@ options.pVeins = 0.1; % porosity in veins (same as true)
 termSink.x=([211 189 330 176]-numIremoved)/redGrid(1)*xL;
 termSink.y=([173 184 192 218]-numJremoved)/redGrid(2)*yL;
 termSink.z=([ 75 126 133 181]-numKremoved)/redGrid(3)*zL;
-termSink.p0=133*10*[1 1 1 1];
+termSink.p0=prsVen*1000*[1 1 1 1];%133*10*[1 1 1 1];
 termSink.perm=1e-6*[1 1 1 1];
     
 % BigBrain Arterier:  dim(346 x 448 x 319)
@@ -97,7 +99,7 @@ termSink.perm=1e-6*[1 1 1 1];
 termSrc.x=([185 171]-numIremoved)/redGrid(1)*xL;
 termSrc.y=([180 184]-numJremoved)/redGrid(2)*yL;
 termSrc.z=([ 98 144]-numKremoved)/redGrid(3)*zL;
-termSrc.p0=133*85*[1 1];
+termSrc.p0=prsArt*1000*[1 1];%133*85*[1 1];
 termSrc.perm=1e-6*[1 1];
 
 
@@ -155,11 +157,9 @@ timeEnd = nt;
 % $$$ timeStartVen=6;
 % $$$ timeEnd = nt;
 
-% boundary conditions   FIX/CHECK ( the values found from prm are not coinciding with the paper's values)
-prsArt = prm.tree.arterial.bndpress;  % kPa % 10.6; % mmHg
-prsVen = prm.tree.venous.bndpress; % kPa  %1.6; % mmHg
 
-termSrc.p0=133*85*[1 1];
+
+termSrc.p0=prsArt*1000*[1 1];%133*85*[1 1];
 termSrc.perm=1e-6*[1 1];
 
 prsValueWestQ1=1000*prsArt;
@@ -375,6 +375,7 @@ CV = interp1(options.time',initialState.volTracerVen',prm.reporttimeline);
 CV = options.porosityVen(:).*CV';
 ref = CA + CQ + CV; %#ok<*NASGU>
 
+
 % Setup for iES
 kalmanOptions.iterES = 1;
 % iES options can be specified there.
@@ -388,10 +389,10 @@ if strfind(kalmanOptions.ES_script,'RLM_MAC')
     % for 'RLM_average_cost' only; if isDumpOne = 1, discard 1 model member so that LMEnRML' and 'RLM_average_cost' have equal numbers of forward model runs
     kalmanOptions.isDumpOne = 0;
     kalmanOptions.append_mean = 1; % for RLM-MAC, append ensemble mean to the end of the ensemble, see runIES_multicore.m
-    kalmanOptions.maxIter = 10; % max number of outer loop iteration
+    kalmanOptions.maxIter = 30; % max number of outer loop iteration
     kalmanOptions.maxInnerIter = 5; % max number of inner loop iteration
     kalmanOptions.lambda = 1;
-    kalmanOptions.minReduction = 10; % minimum relative change of average data mismatch (in percentage), so 1e-2 actually means .0001
+    kalmanOptions.minReduction = 1; % minimum relative change of average data mismatch (in percentage), so 1e-2 actually means .0001
     kalmanOptions.retainStaticVarOnly = 1; % only keep the static variables and free parameters
     
     kalmanOptions.lambda_reduction_factor = 0.9; % reduction factor in case to reduce gamma
