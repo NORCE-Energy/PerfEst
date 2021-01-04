@@ -69,6 +69,9 @@ while (1) %%% enabel goto hack ...
   source = -rateQ*dx*dy*dz;
   source = reshape(source,1,[]);
   
+  %External source term
+  extSource = -(sum(flux,2)+source);
+  
   %Pore-volume 
   if isfield(options,'porosityArt')
     porosityArt = options.porosityArt;
@@ -83,7 +86,7 @@ while (1) %%% enabel goto hack ...
   porVolArt = reshape(dx*dx*dz*porosityArt,1,[]);
   
   % Time of flight
-  [tof, dtof] = upstreamTof3D(nx, ny, nz, tosArt,flux, source, porVolArt);
+  [tof, dtof] = upstreamTof3D(nx, ny, nz, tosArt,flux, source, porVolArt,extSource);
   tofArt = reshape(tof,nx,ny,nz);
   %dtofArt_ = reshape(dtof,nx,ny,nz);
   
@@ -192,8 +195,8 @@ while (1) %%% enabel goto hack ...
   fluxCap = zeros(nx*ny*nz,6);
   sourceCap = -source;
   tracerBndCndCap = zeros(max([nx*ny,nx*nz,ny*nz]),nTime,nface);
-  %tracerSourceCap = vosummlTracerArt; % Er nå i orden??? NB: Denne må fikses når når vxl-konsentrasjoner er beregnet ...
-  tracerSourceCap = 0.5*(upTracerArt+dwnTracerArt);
+  tracerSourceCap = volTracerArt; % Er nå i orden??? NB: Denne må fikses når når vxl-konsentrasjoner er beregnet ...
+  %tracerSourceCap = 0.5*(upTracerArt+dwnTracerArt);
   tofCap0 = reshape(tofCap,nn,1);
   dtofCap = reshape(transitTimeQ,nn,1);
   
@@ -253,7 +256,10 @@ while (1) %%% enabel goto hack ...
   sourceVen = sourceVen + tofCap .* rateQ*dx*dy*dz;
   sourceVen = reshape(sourceVen,1,[]);
   
-  [tofVen, dtofVen] = upstreamTof3D(nx, ny, nz, tosVen, fluxVen, sourceVen, porVolVen);
+  %External source term
+  extSource = -(sum(flux,2)+reshape(rateQ*dx*dy*dz,1,[]));
+  
+  [tofVen, dtofVen] = upstreamTof3D(nx, ny, nz, tosVen, fluxVen, sourceVen, porVolVen, extSource);
   
   % Dynamic trace distribution
   tracerBndCndVen = zeros(max([nx*ny,nx*nz,ny*nz]),nTime,nface);
@@ -489,6 +495,15 @@ end %%% while loop to enable goto-hack (skip tracer calculations)
   %state.porosityQ = porosityQ;
   %state.tofCap = tofCap;
   state.tofArt = tofArt;
+    state.tofVen = tofVen;
+    state.dtofVen = dtofVen;
+    state.tofCap = tofCap;
+    state.dtofCap = dtofCap;
+    vol=xL*yL*zL;
+    state.totCACcnv = totCACcnv/vol;
+    state.totCACArt = totCACArt/vol;
+    state.totCACCap = totCACCap/vol;
+    state.totCACVen = totCACVen/vol;
      
   return
   

@@ -58,11 +58,12 @@ function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,f
   idUp(:,5) = (indexNatural' - nx*ny) .* (K(:) > 1) - (K(:) == 1).*(nx*(J(:)-1)+I(:));
   idUp(:,6) = (indexNatural' + nx*ny) .* (K(:) < nz) - (K(:) == nz).*(nx*(J(:)-1)+I(:));
   
-  termStructIdx = termStruct.i + nx*(termStruct.j-1) + nx*ny*(termStruct.k-1);
   termStructEntry = zeros(1,nn);
-  if (size(termSrcFlux,2) > 0)
-    termStructEntry(termStructIdx) = 1:size(termStructIdx,2);
+  if (size(termSrcFlux,2)>0)
+    termStructIdx = termStruct.i + nx*(termStruct.j-1) + nx*ny*(termStruct.k-1);
+    termStructEntry(termStructIdx) = 1;
   end
+  
    
   for ii = 1:nn
     vxl = tos(ii);
@@ -95,11 +96,15 @@ function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,f
     end
     
     if (termStructEntry(vxl)>0)
-      if (termSrcFlux(termStructEntry(vxl)) > 0  && size(termTracerProfile,2) > 0)
-        fluxUp0 = fluxUp0 + termSrcFlux(termStructEntry(vxl));
-        fluxUp = fluxUp + termTracerProfile(termStructEntry(vxl),:)*termSrcFlux(termStructEntry(vxl));
-      elseif (termSrcFlux(termStructEntry(vxl)) < 0)
-        fluxDown = fluxDown - termSrcFlux(termStructEntry(vxl));
+      for j=1:size(termStructIdx,2)
+        if (termStructIdx(j) == vxl)
+          if (termSrcFlux(j) > 0)
+            fluxUp0 = fluxUp0 + termSrcFlux(j);
+            fluxUp = fluxUp + termTracerProfile(j,:)*termSrcFlux(j);
+          elseif (termSrcFlux(j) < 0)
+            fluxDown = fluxDown - termSrcFlux(j);
+          end
+        end
       end
     end
     

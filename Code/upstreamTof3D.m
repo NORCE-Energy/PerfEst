@@ -10,6 +10,7 @@
 % flux: Array of voxel-wise, face-wise fluxes, positive into voxel.
 % source: Array of voxel-wise source terms, positive into voxel.
 % porvol: Array of voxel-wise pore volumes.
+% extSource: Correction for external source terms (ext vessel terminals)
 %
 %%%%Output:
 %
@@ -26,7 +27,7 @@
 %                south=3
 %
 %
-function [tof, dtof] = upstreamTof3D(nx, ny, nz, tos,flux,source,porvol)
+function [tof, dtof] = upstreamTof3D(nx, ny, nz, tos,flux,source,porvol,extSource)
   nn = nx*ny*nz;
   tof = zeros(nn,1);
   dtof = zeros(nn,1);
@@ -58,6 +59,13 @@ function [tof, dtof] = upstreamTof3D(nx, ny, nz, tos,flux,source,porvol)
       elseif (flux(vxl,face) < -tol)
         fluxDown = fluxDown - flux(vxl,face);
       end
+    end
+    if (extSource > tol)
+      fluxUp = fluxUp + extSource;
+      %Assuming that incoming external source carries zero tof
+      %fluxUpTof = fluxUpTof + 0.0*extSource;
+    elseif (extSource < tol)
+      fluxDown = fluxDown - extSource;
     end
     tofUp = fluxUpTof/(fluxUp+max(0.0,fluxDown-fluxUp)+tol);
     %dtof(vxl) = porvol(vxl)/(0.5*(fluxDown+fluxUp)+tol);
