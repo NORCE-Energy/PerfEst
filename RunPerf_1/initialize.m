@@ -1,4 +1,4 @@
-%function initialize
+function initialize
 
 if ~existfile('Cfinered.mat')
     makeTrimmedData
@@ -328,6 +328,8 @@ if strcmp(obsType,'concentration') % CHECK/FIX
             
         else
             measInd = 1:size(measurement,2);
+            %[dummy,measInd]=max(measurement);
+            %measInd=1:measInd
         end
         measInd = unique(measInd);
         kalmanOptions.measInd = measInd;
@@ -345,6 +347,7 @@ kalmanOptions.obsType = obsType;
 dim = ones(options.fieldSize,1);
 %kalmanOptions.staticVarStdDev = [1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;0.1*dim;0.1*dim;1e-5*dim];
 kalmanOptions.staticVarStdDev = 0.03*abs(kalmanOptions.staticVarMean);
+kalmanOptions.staticVarStdDev(1:7)=0.3;
 kalmanOptions.meanCorrLength = floor(options.L/2.1333);
 kalmanOptions.stdCorrLength = 1;
 
@@ -367,6 +370,7 @@ end
 staticVarLB = [permLB*na;permLB*na;permLB*na;permLB*na;permLB*na;permLB*na;permQLB*na;poroLB*na;poroLB*na;poroQLB*na];
 staticVarUB = [permUB*na;permUB*na;permUB*na;permUB*na;permUB*na;permUB*na;permQUB*na;poroUB*na;poroUB*na;poroQUB*na];
 kalmanOptions.threshold = 0;
+kalmanOptions.staticVarMean(1:7)=-21;
 if ~exist('initial_ensemble.mat','file')
     %ensemble = getFrogEnsemble(kalmanOptions,options);
     ensemble = generateInitialEnsemble(kalmanOptions,options);
@@ -413,7 +417,7 @@ if strfind(kalmanOptions.ES_script,'RLM_MAC')
     kalmanOptions.maxIter = 30; % max number of outer loop iteration
     kalmanOptions.maxInnerIter = 5; % max number of inner loop iteration
     kalmanOptions.lambda = 1;
-    kalmanOptions.minReduction = 1; % minimum relative change of average data mismatch (in percentage), so 1e-2 actually means .0001
+    kalmanOptions.minReduction = 10; % minimum relative change of average data mismatch (in percentage), so 1e-2 actually means .0001
     kalmanOptions.retainStaticVarOnly = 1; % only keep the static variables and free parameters
     
     kalmanOptions.lambda_reduction_factor = 0.9; % reduction factor in case to reduce gamma

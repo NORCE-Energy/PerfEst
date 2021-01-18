@@ -309,7 +309,7 @@ while (iter < kalmanOptions.maxIter) && (obj > dm_threshold)
         numberOfFailedSimulations = [];
         filecontents = [];
         if kalmanOptions.numParProcesses<2
-            [simulatedEnsemble,~,numberOfFailedSimulations]= ...
+            [simulatedEnsemble,filecontentsOut,numberOfFailedSimulations]= ...
                 runForwardSimulations(ensemble,0,kalmanOptions,options,[], ...
                 filecontents);
             jtmp=size(simulatedEnsemble,1)*size(simulatedEnsemble,2); % number of total data
@@ -319,7 +319,7 @@ while (iter < kalmanOptions.maxIter) && (obj > dm_threshold)
         else
             [simData,~]= runMultiCoreSim(0,ensemble,H,kalmanOptions,options);
         end
-        save(strcat(dir,'tmpSimData.mat'),'simData','simulatedEnsemble'); % save latest simData before normalizing
+        save(strcat(dir,'tmpSimData.mat'),'simData','simulatedEnsemble','filecontentsOut'); % save latest simData before normalizing
         
         if ~isempty(scale)
             simData=simData.*repmat(scale,1,ne+1);

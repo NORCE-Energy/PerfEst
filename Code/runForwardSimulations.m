@@ -51,9 +51,10 @@ for I = 1:size(ensemble,2)
     end
     
     simulatedEnsemble(:,1,I) = measurement(:);  %#ok<*AGROW>
-    
+    filecontentsOut.rateQ(:,I)=state.rateQ(:);
+    filecontentsOut.concentration(:,I)=concentration;
 end
 
 fprintf('\n');
-filecontentsOut = [];
+%filecontentsOut = [];
 numberOfFailedSimulations = [];

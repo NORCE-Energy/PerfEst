@@ -174,7 +174,7 @@ load trueSolutionSmoother.mat;
 if iter  == 0 && ~exist('simulatedDataIter0.mat','file')
     numberOfFailedSimulations = [];
     if kalmanOptions.numParProcesses<2
-        [simulatedEnsemble,~,numberOfFailedSimulations]= runForwardSimulations(ensemble,0,...
+        [simulatedEnsemble,filecontentsOut,numberOfFailedSimulations]= runForwardSimulations(ensemble,0,...
             kalmanOptions,options,cQt,filecontents); %#ok<*ASGLU>
         jtmp=size(simulatedEnsemble,1)*size(simulatedEnsemble,2); % number of total data
         itmp=size(simulatedEnsemble,3); % number of realizationspw
@@ -183,7 +183,8 @@ if iter  == 0 && ~exist('simulatedDataIter0.mat','file')
     else
         [simData,simulatedEnsemble] = runMultiCoreSim(0,ensemble,H,kalmanOptions,options);
     end
-    save(strcat(dir,'simulatedDataIter',num2str(iter)),'simData','simulatedEnsemble','numberOfFailedSimulations');
+    save(strcat(dir,'simulatedDataIter',num2str(iter)),'simData','simulatedEnsemble',...
+        'numberOfFailedSimulations','filecontentsOut');
 else
     load([dir,'simulatedDataIter',num2str(iter)],'simData'); % must contain "simData"
 end
