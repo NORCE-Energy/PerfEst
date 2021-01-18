@@ -17,13 +17,11 @@ if ~existfile('Cfinered.mat')
     perfObs=perfObs(numIremoved+1:end-numIendRemoved,numJremoved+1:end-numJendRemoved,numKremoved+1:end-numKendRemoved,:);
     redGrid=size(Cfine);
 
-
     save('Cfinered','-v7.3','Cfine','perfObs','numIremoved','numIendRemoved','numJremoved','numJendRemoved','numKremoved','numKendRemoved','redGrid','origGrid')
 else
     load('Cfinered')
     load('trimmedData','prm')
     disp('load tree')
-    load('/home/gen/Data/simfullbraindisc-384x384x256-tree','data')
 end
 % $$$ load('simfullbrainindicator-634x515x1_filament.mat'); %#ok<*LOAD>
 % $$$ load('simfullbraindisc-634x515x1-tree_filament.mat','data');
@@ -128,7 +126,7 @@ options.termSrc.perm=termSrc.perm/options.visc0;
 clear termSrc;
 
 %%% NB options delen m? kanskje flyttes til senere i koden
-
+load('/home/gen/Data/simfullbraindisc-384x384x256-tree','data')
 % the lines below remove some empty parts of the domain:
 data.arterial.tree.bw=data.arterial.tree.bw(numIremoved+1:end-numIendRemoved,numJremoved+1:end-numJendRemoved,numKremoved+1:end-numKendRemoved);
 data.venous.tree.bw=data.venous.tree.bw(numIremoved+1:end-numIendRemoved,numJremoved+1:end-numJendRemoved,numKremoved+1:end-numKendRemoved);
@@ -137,12 +135,17 @@ prm.dim=size(data.venous.tree.bw);
 %    getPrior(prm,data,options);
 %end
 %load('priorTissue.mat')
-permArtCrs=1e-10
-permQCrs=1e-10
-permVenCrs=1e-10
-poroArtCrs= 0.5 * (13/84)
-poroQCrs=0.5 * (7/84)
-poroVenCrs = 0.5 * (64/84)
+permArtCrs=8e-10
+permQCrs=8e-10
+permVenCrs=8e-10
+permArtCrs=2e-9
+permQCrs=2e-9
+permVenCrs=2e-9
+% correction factor 0.4 based on first initial ensemble
+% mean(sum(fullmeasurement)./sum(simData))
+poroArtCrs= 0.075 * (13/84)
+poroQCrs=0.075 * (7/84)
+poroVenCrs = 0.075 * (64/84)
 % if ~exist('priorFrog.mat','file')
 %     getPriorFrog(prm,data,options);
 % end
@@ -341,14 +344,14 @@ kalmanOptions.obsType = obsType;
 % Define bounds     CHECK/FIX
 dim = ones(options.fieldSize,1);
 %kalmanOptions.staticVarStdDev = [1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;0.1*dim;0.1*dim;1e-5*dim];
-kalmanOptions.staticVarStdDev = 0.25*abs(kalmanOptions.staticVarMean);
+kalmanOptions.staticVarStdDev = 0.03*abs(kalmanOptions.staticVarMean);
 kalmanOptions.meanCorrLength = floor(options.L/2.1333);
 kalmanOptions.stdCorrLength = 1;
 
 % Compute initial ensemble for porosity and transmissibility
 na = ones(options.numGridBlocks,1);
 permLB = -32;
-permUB = -16;
+permUB = -14;
 permQLB = -32;
 permQUB = -14;
 poroLB = 0.001;
@@ -367,6 +370,7 @@ kalmanOptions.threshold = 0;
 if ~exist('initial_ensemble.mat','file')
     %ensemble = getFrogEnsemble(kalmanOptions,options);
     ensemble = generateInitialEnsemble(kalmanOptions,options);
+    ensemble(2:7,:)=repmat(ensemble(1,:),6,1);
     ensemble = adjustVariableWithInBounds(ensemble,staticVarLB,staticVarUB);
     save('initial_ensemble','ensemble');
     disp('initial_ensemble.mat is created.')

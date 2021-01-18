@@ -319,7 +319,7 @@ while (iter < kalmanOptions.maxIter) && (obj > dm_threshold)
         else
             [simData,~]= runMultiCoreSim(0,ensemble,H,kalmanOptions,options);
         end
-        save(strcat(dir,'tmpSimData.mat'),'simData'); % save latest simData before normalizing
+        save(strcat(dir,'tmpSimData.mat'),'simData','simulatedEnsemble'); % save latest simData before normalizing
         
         if ~isempty(scale)
             simData=simData.*repmat(scale,1,ne+1);
