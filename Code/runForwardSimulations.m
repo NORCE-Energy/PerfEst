@@ -52,7 +52,7 @@ for I = 1:size(ensemble,2)
     
     simulatedEnsemble(:,1,I) = measurement(:);  %#ok<*AGROW>
     filecontentsOut.rateQ(:,I)=state.rateQ(:);
-    filecontentsOut.concentration(:,I)=concentration;
+    filecontentsOut.concentration(:,I)=concentration(:);
 end
 
 fprintf('\n');
