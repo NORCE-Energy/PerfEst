@@ -53,7 +53,7 @@
 %              velY(i,j,k)
 %
 %
-function [pres, velX, velY, velZ, rateQ] = flowSolver3D2Q(options, extSrcTerm, sampleMask)
+function [pres, velX, velY, velZ, rateQ, termSrcFlux, termSinkFlux] = flowSolver3D2Q(options, extSrcTerm, sampleMask)
 
   nx = options.nx;
   ny = options.ny;
@@ -73,7 +73,7 @@ function [pres, velX, velY, velZ, rateQ] = flowSolver3D2Q(options, extSrcTerm, s
   qCon = zeros(nx,ny,nz);
   
   if (size(options.permX,1) == nx && size(options.permY,2) == ny && size(options.permZ,3) == nz)
-    %disp('### flowSolver3D2Q:  permeabilities detected ###');
+    disp('### flowSolver3D2Q:  permeabilities detected ###');
     isTransNotPerm=0;
     mobX = options.permX./options.visc;
     mobY = options.permY./options.visc;
@@ -85,7 +85,7 @@ function [pres, velX, velY, velZ, rateQ] = flowSolver3D2Q(options, extSrcTerm, s
     %qCon(:,:) = 0.5*(dy/dx+dx/dy)*mobQ;
     qCon(:,:,:) = dy*dx*dz*mobQ;
   elseif (size(options.permX,1) == nx+1 && size(options.permY,2) == ny+1 && size(options.permZ,3) == nz+1)
-    %disp('### flowSolver3D2Q:  transmissibilities detected ###');
+    disp('### flowSolver3D2Q:  transmissibilities detected ###');
     isTransNotPerm=1;
     xCon(2:nx,:,:,:) = (dy*dz/dx)*options.permX(2:nx,:,:,:);
     yCon(:,2:ny,:,:) = (dx*dz/dy)*options.permY(:,2:ny,:,:);
@@ -216,6 +216,9 @@ function [pres, velX, velY, velZ, rateQ] = flowSolver3D2Q(options, extSrcTerm, s
         if (isfield(options,'mask'))
           yCon(:,ny+1,:,q) = yCon(:,ny+1,:,q).*mask(:,ny,:,q);
         end
+        if (isfield(options,'faceMaskNorth'))
+          yCon(:,ny+1,:,q) = yCon(:,ny+1,:,q).*reshape(options.faceMaskNorth(:,:,q),nx,1,nz,1);
+        end
         prsBndMtx(:,ny,:,q) = prsBndMtx(:,ny,:,q) + yCon(:,ny+1,:,q);
         prsBndRhs(:,ny,:,q) = prsBndRhs(:,ny,:,q) + permute(prsBndVal(1:nx,1:nz,2,2,q),[1,3,2]).*yCon(:,ny+1,:,q);
     end
@@ -244,14 +247,37 @@ function [pres, velX, velY, velZ, rateQ] = flowSolver3D2Q(options, extSrcTerm, s
         prsBndRhs(:,:,nz,q) = prsBndRhs(:,:,nz,q) + prsBndVal(1:nx,1:ny,3,2,q).*zCon(:,:,nz+1,q);
     end
   end
- 
-  if size(extSrcTerm,1) > 0
-    B(:,5) = B(:,5) + reshape(prsBndMtx,1,[])';
-    %B(:,5) = 1.00000001*B(:,5);
-  else
-    B(:,5) = B(:,5) + reshape(prsBndMtx,1,[])';
-    %B(:,5) = 1.000000000001*B(:,5);
-  end
+  B(:,5) = B(:,5) + reshape(prsBndMtx,1,[])';
+  
+  % Terminal sources (arterial)
+  termCoeff=zeros(nn,1);
+  termSrcRhs=zeros(nn,1);
+  if (isfield(options,'termSrc'))
+    i=options.termSrc.i;
+    j=options.termSrc.j;
+    k=options.termSrc.k;
+    nglob=nx*ny*(k-1)+nx*(j-1)+i;
+    for n=1:size(i,2)
+      termCoeff(nglob(n))=termCoeff(nglob(n))+options.termSrc.perm(n);
+      termSrcRhs(nglob(n))=termSrcRhs(nglob(n))+options.termSrc.perm(n)*options.termSrc.p0(n);
+    end
+  end 
+  B(1:nn,5) = B(1:nn,5) + termCoeff;
+  
+  % Terminal sinks (venular)
+  termCoeff=zeros(nn,1);
+  termSinkRhs=zeros(nn,1);
+  if (isfield(options,'termSink'))
+    i=options.termSink.i;
+    j=options.termSink.j;
+    k=options.termSink.k;
+    nglob=nx*ny*(k-1)+nx*(j-1)+i;
+    for n=1:size(i,2)
+      termCoeff(nglob(n))=termCoeff(nglob(n))+options.termSink.perm(n);
+      termSinkRhs(nglob(n))=termSinkRhs(nglob(n))+options.termSink.perm(n)*options.termSink.p0(n);
+    end
+  end 
+  B(nn+1:2*nn,5) = B(nn+1:2*nn,5) + termCoeff;
   
   mtx = spdiags(B,d,2*nn,2*nn);
   
@@ -261,8 +287,8 @@ function [pres, velX, velY, velZ, rateQ] = flowSolver3D2Q(options, extSrcTerm, s
     rhs(1:nn) = extSrcTerm(:,1);
     rhs(nn+1:2*nn) = extSrcTerm(:,2);
   else
-    rhs(1:nn) = (reshape(prsBndRhs(:,:,:,1),1,[]))';
-    rhs(nn+1:2*nn) = (reshape(prsBndRhs(:,:,:,2),1,[]))';
+    rhs(1:nn) = (reshape(prsBndRhs(:,:,:,1),1,[]))'+termSrcRhs;
+    rhs(nn+1:2*nn) = (reshape(prsBndRhs(:,:,:,2),1,[]))' + termSinkRhs;
   end
   
   x = mtx\rhs;
@@ -319,6 +345,30 @@ function [pres, velX, velY, velZ, rateQ] = flowSolver3D2Q(options, extSrcTerm, s
   
   rateQ = -qCon.*(pres(:,:,:,2)-pres(:,:,:,1));
   rateQ = rateQ/(dx*dy*dz);
+  
+  %Flux for terminal sources
+  termSrcFlux = zeros(0);
+  if (isfield(options,'termSink'))
+    i=options.termSrc.i;
+    j=options.termSrc.j;
+    k=options.termSrc.k;
+    termSrcFlux=zeros(size(i,2),1);
+    for n=1:size(i,2)  
+      termSrcFlux(n)= - options.termSrc.perm(n) * (pres(i(n),j(n),k(n),1) - options.termSrc.p0(n));
+    end
+  end 
+  
+  %Flux for terminal sinks
+  termSinkFlux = zeros(0);
+  if (isfield(options,'termSink'))
+    i=options.termSink.i;
+    j=options.termSink.j;
+    k=options.termSink.k;
+    termSinkFlux=zeros(size(i,2),1);
+    for n=1:size(i,2)  
+      termSinkFlux(n)= options.termSink.perm(n) * (options.termSink.p0(n) - pres(i(n),j(n),k(n),2));
+    end
+  end 
   
   end
 
