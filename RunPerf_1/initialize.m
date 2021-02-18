@@ -328,8 +328,10 @@ if strcmp(obsType,'concentration') % CHECK/FIX
             
         else
             measInd = 1:size(measurement,2);
-            %[dummy,measInd]=max(measurement);
-            %measInd=1:measInd
+            [dummy,measInd]=max(measurement);
+            [dummy,measInd]=max(diff(measurement));
+            measInd=measInd+1;
+            measInd=1:measInd
         end
         measInd = unique(measInd);
         kalmanOptions.measInd = measInd;
@@ -346,7 +348,7 @@ kalmanOptions.obsType = obsType;
 % Define bounds     CHECK/FIX
 dim = ones(options.fieldSize,1);
 %kalmanOptions.staticVarStdDev = [1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;0.1*dim;0.1*dim;1e-5*dim];
-kalmanOptions.staticVarStdDev = 0.03*abs(kalmanOptions.staticVarMean);
+kalmanOptions.staticVarStdDev = 0.1*abs(kalmanOptions.staticVarMean);
 kalmanOptions.staticVarStdDev(1:7)=0.3;
 kalmanOptions.meanCorrLength = floor(options.L/2.1333);
 kalmanOptions.stdCorrLength = 1;

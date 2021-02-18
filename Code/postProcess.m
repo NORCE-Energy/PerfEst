@@ -141,6 +141,6 @@ elseif strcmp(display,'mae')
     print('-r0',prtFile,'-dpng');
     
 end % display
-
+save resPostPros
 end
 
