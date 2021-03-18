@@ -309,7 +309,7 @@ if strcmp(obsType,'concentration') % CHECK/FIX
     if getOption(kalmanOptions,'thinobs',0) > 0 
         % thin out to reduce amount of data
         Nr = floor(length(options.time)/kalmanOptions.thinobs);
-        if Nr > 1 && size(measurement,1) > 1
+        if 0 && Nr > 1 && size(measurement,1) > 1
             
             CV=cov(measurement);
             [a,b]=max(diag(CV));
@@ -328,6 +328,8 @@ if strcmp(obsType,'concentration') % CHECK/FIX
             
         else
             measInd = 1:size(measurement,2);
+            [a,b]=max(diff(fullmeasurement'));
+            measInd=1:max(b)
         end
         measInd = unique(measInd);
         kalmanOptions.measInd = measInd;
@@ -367,13 +369,17 @@ end
 staticVarLB = [permLB*na;permLB*na;permLB*na;permLB*na;permLB*na;permLB*na;permQLB*na;poroLB*na;poroLB*na;poroQLB*na];
 staticVarUB = [permUB*na;permUB*na;permUB*na;permUB*na;permUB*na;permUB*na;permQUB*na;poroUB*na;poroUB*na;poroQUB*na];
 kalmanOptions.threshold = 0;
-kalmanOptions.staticVarMean(1:7*nn)=-21;
+kalmanOptions.staticVarMean(1:6*nn)=-20;
+kalamnOptions.staticVarMean(6*nn+1:7*nn)=-22; 
 B=load('../RunPerf_1/fullMeas.mat');
 for I=1:nn
     corrFact=sum(fullmeasurement(I,:))/sum(B.fullmeasurement);
     kalmanOptions.staticVarMean(7*nn+I:nn:end)=kalmanOptions.staticVarMean(7*nn+I:nn:end)*corrFact;
 end
-kalmanOptions.staticVarStdDev = 0.03*abs(kalmanOptions.staticVarMean);
+C=load('../RunPerf_1/finalState.mat')
+kalmanOptions.staticVarMean(1:7*nn)=log(C.options.permQ);
+
+kalmanOptions.staticVarStdDev = 0.1*abs(kalmanOptions.staticVarMean);
 kalmanOptions.staticVarStdDev(6*nn+1:7*nn)=0.3;
 kalmanOptions.staticVarStdDev(1:6*nn)=1;
 if ~exist('initial_ensemble.mat','file')

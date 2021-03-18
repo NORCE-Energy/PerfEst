@@ -328,10 +328,10 @@ if strcmp(obsType,'concentration') % CHECK/FIX
             
         else
             measInd = 1:size(measurement,2);
-            [dummy,measInd]=max(measurement);
-            [dummy,measInd]=max(diff(measurement));
-            measInd=measInd+1;
-            measInd=1:measInd
+            % [dummy,measInd]=max(measurement);
+            % [dummy,measInd]=max(diff(measurement));
+            % measInd=measInd+1;
+            % measInd=1:measInd
         end
         measInd = unique(measInd);
         kalmanOptions.measInd = measInd;

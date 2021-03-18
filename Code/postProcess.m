@@ -17,21 +17,26 @@ uc = 6000;
 
 % load "true" solution
 load('initialState.mat','prm','data','options','perfObs','nt','nxF','nyF');
-if existfile('Cfinered.mat')
-    load('Cfinered','Cfine')
+if ~existfile('upscaledProp.mat')
+    if existfile('Cfinered.mat')
+        load('Cfinered','Cfine')
+    end
+    % remove veins
+    art = data.arterial.tree.bw;    
+    ven = data.venous.tree.bw;  
+    veins = art + ven;  
+    perfObs(veins==1) = 0;
+
+    % upscale true data
+    Vcrs = upscale(veins,comp);
+    Ccrs = upscale(Cfine, [comp,nt]);
+    Ccrs(repmat(Vcrs,1,1,nt) >= 0.5) = NaN;
+
+    save('upscaledProp','Ccrs','Vcrs','perfObs')
 end
 
+load('upscaledProp','Ccrs','Vcrs','perfObs')
 
-% remove veins
-art = data.arterial.tree.bw;
-ven = data.venous.tree.bw;
-veins = art + ven;
-perfObs(veins==1) = 0;
-
-% upscale true data
-Vcrs = upscale(veins,comp);
-Ccrs = upscale(Cfine, [comp,nt]);
-Ccrs(repmat(Vcrs,1,1,nt) >= 0.5) = NaN;
 P_true = upscale(perfObs, comp);
 
 % arterial inlet function (aif)
@@ -141,6 +146,7 @@ elseif strcmp(display,'mae')
     print('-r0',prtFile,'-dpng');
     
 end % display
+clear data
 save resPostPros
 end
 

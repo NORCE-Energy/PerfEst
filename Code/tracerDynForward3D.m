@@ -37,7 +37,9 @@
 %                south=3
 %
 %
-function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,flux,source,tracerBnd,tracerSource,time,tof,dtof,srcSign,porVolume,mask,termStruct,termSrcFlux,termTracerProfile)
+function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz,...
+    tos,flux,source,tracerBnd,tracerSource,time,tof,dtof,srcSign,porVolume,...
+    mask,termStruct,termSrcFlux,termTracerProfile)
   mm = length(time);
   nn = nx*ny*nz;
   upTracer = zeros(nn,mm);
@@ -154,8 +156,27 @@ function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,f
       end
       
       sampleTau = (1.0/(ms))*ones(1,ms);
+      % dispersion term for ven
+      if (source(vxl) > 0.0)
+          dcwght=8;
+          dispCoeff=ones(1,dcwght*ms)/(dcwght*ms);
+          dispCoeff = dispCoeff - 0.95*linspace(-1,1,dcwght*ms)/(dcwght*ms);
+          shiftTau = conv(shiftTau,dispCoeff);
+          sampleTau = conv(sampleTau,dispCoeff);
+      end
+
     end   
+   
+    % dispersion term for cap
+    %     if (srcSign < 0)
+    %       dcwght=1;
+    %       dispCoeff=ones(1,dcwght*ms)/(dcwght*ms);
+    %       dispCoeff = dispCoeff - 0.95*linspace(-1,1,dcwght*ms)/(dcwght*ms);
+    %       shiftTau = conv(shiftTau,dispCoeff);
+    %       sampleTau = conv(sampleTau,dispCoeff);
+    %     end
     
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
 %%%% Ser ut til at conv er såpass effektiv for shift at det ikke er grunn
 %%%% til håndkoding.  En annen ting er at en sampling av volTracer
