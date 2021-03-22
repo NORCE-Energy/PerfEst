@@ -309,7 +309,7 @@ if strcmp(obsType,'concentration') % CHECK/FIX
     if getOption(kalmanOptions,'thinobs',0) > 0 
         % thin out to reduce amount of data
         Nr = floor(length(options.time)/kalmanOptions.thinobs);
-        if 0 && Nr > 1 && size(measurement,1) > 1
+        if  Nr > 1 && size(measurement,1) > 1
             
             CV=cov(measurement);
             [a,b]=max(diag(CV));
@@ -331,6 +331,7 @@ if strcmp(obsType,'concentration') % CHECK/FIX
             [a,b]=max(diff(fullmeasurement'));
             measInd=1:max(b)
         end
+        measInd=1:150;
         measInd = unique(measInd);
         kalmanOptions.measInd = measInd;
         measurement = measurement(:,measInd); 
@@ -347,8 +348,8 @@ kalmanOptions.obsType = obsType;
 dim = ones(options.fieldSize,1);
 %kalmanOptions.staticVarStdDev = [1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;0.1*dim;0.1*dim;1e-5*dim];
 
-kalmanOptions.meanCorrLength = floor(options.L/2.1333);
-kalmanOptions.stdCorrLength = 1;
+kalmanOptions.meanCorrLength = 0.01; %floor(options.L/2.1333);
+kalmanOptions.stdCorrLength = 0.01;
 
 % Compute initial ensemble for porosity and transmissibility
 na = ones(options.numGridBlocks,1);
@@ -377,10 +378,26 @@ for I=1:nn
     kalmanOptions.staticVarMean(7*nn+I:nn:end)=kalmanOptions.staticVarMean(7*nn+I:nn:end)*corrFact;
 end
 C=load('../RunPerf_1/finalState.mat')
-kalmanOptions.staticVarMean(1:7*nn)=log(C.options.permQ);
+kalmanOptions.staticVarMean(1:7*nn)=log(C.options.permQ)+2;
 
+if existfile('./simulatedDataIter0.mat') && existfile('./resPostPros.mat')
+    SD=load('simulatedDataIter0','filecontentsOut');
+    E0=load('ensemble0','ensemble');
+    load('resPostPros','P_ms','uc')
+    permQens=E0.ensemble(6*nn+1:7*nn,:);
+    for I = 1:nn
+        [a,b]=min(abs(SD.filecontentsOut.rateQ(:)*uc-P_ms(I)));
+        kalmanOptions.staticVarMean(6*nn+I)=permQens(b);
+    end
+    !rm simulatedDataIter*
+    !rm initial_ensemble.mat
+    !rm ensemble*.mat
+    clear SD E0
+end
+    
 kalmanOptions.staticVarStdDev = 0.1*abs(kalmanOptions.staticVarMean);
-kalmanOptions.staticVarStdDev(6*nn+1:7*nn)=0.3;
+kalmanOptions.staticVarStdDev(1:6*nn)=1;
+kalmanOptions.staticVarStdDev(6*nn+1:7*nn)=0.05;
 kalmanOptions.staticVarStdDev(1:6*nn)=1;
 if ~exist('initial_ensemble.mat','file')
     %ensemble = getFrogEnsemble(kalmanOptions,options);
