@@ -370,17 +370,26 @@ end
 staticVarLB = [permLB*na;permLB*na;permLB*na;permLB*na;permLB*na;permLB*na;permQLB*na;poroLB*na;poroLB*na;poroQLB*na];
 staticVarUB = [permUB*na;permUB*na;permUB*na;permUB*na;permUB*na;permUB*na;permQUB*na;poroUB*na;poroUB*na;poroQUB*na];
 kalmanOptions.threshold = 0;
-kalmanOptions.staticVarMean(1:6*nn)=-20;
-kalamnOptions.staticVarMean(6*nn+1:7*nn)=-22; 
 B=load('../RunPerf_1/fullMeas.mat');
 for I=1:nn
     corrFact=sum(fullmeasurement(I,:))/sum(B.fullmeasurement);
     kalmanOptions.staticVarMean(7*nn+I:nn:end)=kalmanOptions.staticVarMean(7*nn+I:nn:end)*corrFact;
 end
 C=load('../RunPerf_1/finalState.mat')
-kalmanOptions.staticVarMean(1:7*nn)=log(C.options.permQ)+2;
+kalmanOptions.staticVarMean(1:7*nn)=log(C.options.permQ);
+% increase perm for arteries and veins
+kalmanOptions.staticVarMean(1:6*nn)=log(C.options.permQ)+1;
+% increas perm for arteries further
+kalmanOptions.staticVarMean(1:nn)=log(C.options.permQ)+3;
+kalmanOptions.staticVarMean(2*nn+1:3*nn)=log(C.options.permQ)+3;
+kalmanOptions.staticVarMean(4*nn+1:5*nn)=log(C.options.permQ)+3;
+kalmanOptions.staticVarStdDev = 0.1*abs(kalmanOptions.staticVarMean);
+kalmanOptions.staticVarStdDev(1:6*nn)=1;
+kalmanOptions.staticVarStdDev(6*nn+1:7*nn)=0.3;
+newEns=0;
 
 if existfile('./simulatedDataIter0.mat') && existfile('./resPostPros.mat')
+    newEns=1;
     SD=load('simulatedDataIter0','filecontentsOut');
     E0=load('ensemble0','ensemble');
     load('resPostPros','P_ms','uc')
@@ -389,19 +398,39 @@ if existfile('./simulatedDataIter0.mat') && existfile('./resPostPros.mat')
         [a,b]=min(abs(SD.filecontentsOut.rateQ(:)*uc-P_ms(I)));
         kalmanOptions.staticVarMean(6*nn+I)=permQens(b);
     end
+    kalmanOptions.staticVarStdDev(6*nn+1:7*nn)=0.05;
     !rm simulatedDataIter*
     !rm initial_ensemble.mat
     !rm ensemble*.mat
-    clear SD E0
+    %clear SD E0
 end
     
-kalmanOptions.staticVarStdDev = 0.1*abs(kalmanOptions.staticVarMean);
-kalmanOptions.staticVarStdDev(1:6*nn)=1;
-kalmanOptions.staticVarStdDev(6*nn+1:7*nn)=0.05;
-kalmanOptions.staticVarStdDev(1:6*nn)=1;
+
 if ~exist('initial_ensemble.mat','file')
-    %ensemble = getFrogEnsemble(kalmanOptions,options);
+    % ensemble = getFrogEnsemble(kalmanOptions,options);
     ensemble = generateInitialEnsemble(kalmanOptions,options);
+    if newEns==1
+        ensPert=randn(10*nn,kalmanOptions.ensembleSize);
+        % assume that there is a correlation between permQ and the arterial
+        % permeabilities, but all other quantites are uncorrelated
+        for I=1:6
+            ensemble(1+nn*(I-1):nn*I,:)=repmat(kalmanOptions.staticVarMean(1+nn*(I-1):nn*I),...
+                1,kalmanOptions.ensembleSize)+ensPert(1+nn*(I-1):nn*I,:).*...
+                repmat(kalmanOptions.staticVarStdDev(1+nn*(I-1):nn*I),1,kalmanOptions.ensembleSize);
+        end
+        for I=7
+            thisPert=-0.5*ensPert(1:nn,:)-0.5*ensPert(nn+1:2*nn,:)-...
+                0.5*ensPert(2*nn+1:3*nn,:)+0.5*ensPert(6*nn+1:7*nn,:);
+            ensemble(1+nn*(I-1):nn*I,:)=repmat(kalmanOptions.staticVarMean(1+nn*(I-1):nn*I),...
+                1,kalmanOptions.ensembleSize)+thisPert.*...
+                repmat(kalmanOptions.staticVarStdDev(1+nn*(I-1):nn*I),1,kalmanOptions.ensembleSize);
+        end
+        for I=8:10
+            ensemble(1+nn*(I-1):nn*I,:)=repmat(kalmanOptions.staticVarMean(1+nn*(I-1):nn*I),...
+                1,kalmanOptions.ensembleSize)+ensPert(1+nn*(I-1):nn*I,:).*...
+                repmat(kalmanOptions.staticVarStdDev(1+nn*(I-1):nn*I),1,kalmanOptions.ensembleSize);
+        end
+    end
     ensemble = adjustVariableWithInBounds(ensemble,staticVarLB,staticVarUB);
     save('initial_ensemble','ensemble');
     disp('initial_ensemble.mat is created.')

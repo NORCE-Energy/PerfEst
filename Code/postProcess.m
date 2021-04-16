@@ -1,4 +1,10 @@
-function [P,N,P_ms,P_svd,P_true] = postProcess(comp,display)
+function [P,N,P_ms,P_svd,P_model,P_da,P_true] = postProcess(comp,display)
+
+% function [P,N,P_ms,P_svd,P_true] = postProcess(comp,display)
+%
+%
+
+% Copyright NORCE (2018-)
 
 
 % number of compartments (x,y) to consider

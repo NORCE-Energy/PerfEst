@@ -15,7 +15,7 @@ fieldSize=options.fieldSize;
 % Either read the inital ensemble from file specified in
 % kalmanOptions.initialEnsemble or generate it: 
 if isfield(kalmanOptions,'initialEnsemble')
-  load(kalmanOptions.initialEnsemble,'ensemble')
+    load(kalmanOptions.initialEnsemble,'ensemble')
 else
   % initialization of ensemble, that is, initialization of the
   % static variables:
@@ -26,20 +26,51 @@ else
       while s > 4.2897e+09, s = round(s/1000); end
       rng(s); 
   end
-  for i=1:kalmanOptions.ensembleSize
-    numStart=1;
-    numEnd=fieldSize;
-    for k=1:size(options.staticVar,1)     
-      [ensemble(numStart:numEnd,i)]= ...
-	  gaussianWithVariableParameters(options.dim, ...
-			kalmanOptions.staticVarMean(numStart:numEnd), ...
-			kalmanOptions.staticVarStdDev(numStart:numEnd), ...
-			kalmanOptions.meanCorrLength,...
-			kalmanOptions.stdCorrLength,kalmanOptions);
-      numStart=numStart+fieldSize;
-      numEnd=numEnd+fieldSize;
-    end
+  if 1 % add condition here, given from kalmanOptions, for now it is hard coded.
+      for i=1:kalmanOptions.ensembleSize
+          numStart=1;
+          numEnd=fieldSize;
+          for k=1:size(options.staticVar,1)
+              [ensemble(numStart:numEnd,i),~,pert]= ...
+                  gaussianWithVariableParameters(options.dim, ...
+                  kalmanOptions.staticVarMean(numStart:numEnd), ...
+                  kalmanOptions.staticVarStdDev(numStart:numEnd), ...
+                  kalmanOptions.meanCorrLength,...
+                  kalmanOptions.stdCorrLength,kalmanOptions);
+              if strcmp(options.staticVar(k,:),'PERMXART')
+                  pert1=pert;
+              elseif strcmp(options.staticVar(k,:),'PERMYART')
+                  pert2=pert;
+              elseif strcmp(options.staticVar(k,:),'PERMZART')
+                  pert3=pert;
+              elseif strcmp(deblank(options.staticVar(k,:)),'TRANQ')
+                  pert4=pert;
+              end
+              if strcmp(deblank(options.staticVar(k,:)),'TRANQ')
+                  ensemble(numStart:numEnd,i)=kalmanOptions.staticVarMean(numStart:numEnd)+...
+                      0.5*kalmanOptions.staticVarStdDev(numStart:numEnd).*(pert4-pert1-pert2-pert3);
+              end
+              numStart=numStart+fieldSize;
+              numEnd=numEnd+fieldSize;
+          end
+      end
+  else
+      for i=1:kalmanOptions.ensembleSize
+          numStart=1;
+          numEnd=fieldSize;
+          for k=1:size(options.staticVar,1)
+              [ensemble(numStart:numEnd,i)]= ...
+                  gaussianWithVariableParameters(options.dim, ...
+                  kalmanOptions.staticVarMean(numStart:numEnd), ...
+                  kalmanOptions.staticVarStdDev(numStart:numEnd), ...
+                  kalmanOptions.meanCorrLength,...
+                  kalmanOptions.stdCorrLength,kalmanOptions);
+              numStart=numStart+fieldSize;
+              numEnd=numEnd+fieldSize;
+          end
+      end
   end
+      
   
   % only keep active cells
   if isequal(size(ensemble,1),options.fieldSize* size(options.staticVar,1))

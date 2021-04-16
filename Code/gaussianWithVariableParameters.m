@@ -1,14 +1,16 @@
-function [x,corrLength]=gaussianWithVariableParameters(fieldDim,meanValue, ...
+function [x,corrLength,pert]=gaussianWithVariableParameters(fieldDim,meanValue, ...
 			  Sdev,meanCorrLength,stdCorrLength,options)
 
-% function [x,corrLength]=gaussianWithVariableParameters(meanValue, ...
+% function [x,corrLength,pert]=gaussianWithVariableParameters(meanValue, ...
 %			  Sdev,meanCorrLength,stdCorrLength); 
 %
 % Setup a gaussian field with correlation length drawn from a
 % normal distribution.
 %
 % x              : the generated field.
-% corrLenght     : the drawn correlation length.
+% corrLenght     : the drawn correlation length (optional). 
+% pert           : pertubation used to generate the field (optional).
+%
 % fieldDim       : dimension of the field.
 % meanValue      : the mean value of the field (vector of the size
 %                  of the field).
@@ -51,7 +53,13 @@ else
       end
     end
   else
-    x=meanValue+fastGaussian3d(fieldDim,Sdev,corrLength); 
+      if nargout>2
+          pert=fastGaussian3d(fieldDim,Sdev,corrLength);
+          x=meanValue+pert;
+          pert=pert./Sdev;
+      else
+          x=meanValue+fastGaussian3d(fieldDim,Sdev,corrLength);
+      end
   end
 end
 
