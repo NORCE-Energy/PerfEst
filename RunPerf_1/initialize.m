@@ -3,20 +3,13 @@ function initialize
 if ~existfile('Cfinered.mat')
     makeTrimmedData
     disp('load trimmed data')
-
-
     load('trimmedData','Cfine','perfObs','prm')
-
-
-
-
     totConc=sum(abs(Cfine),4);
     [numIremoved,numIendRemoved,numJremoved,numJendRemoved,numKremoved,numKendRemoved,comprTotConc]=removeUnactiveLayers(totConc);
     origGrid=size(Cfine);
     Cfine=Cfine(numIremoved+1:end-numIendRemoved,numJremoved+1:end-numJendRemoved,numKremoved+1:end-numKendRemoved,:);
     perfObs=perfObs(numIremoved+1:end-numIendRemoved,numJremoved+1:end-numJendRemoved,numKremoved+1:end-numKendRemoved,:);
     redGrid=size(Cfine);
-
     save('Cfinered','-v7.3','Cfine','perfObs','numIremoved','numIendRemoved','numJremoved','numJendRemoved','numKremoved','numKendRemoved','redGrid','origGrid')
 else
     load('Cfinered')
@@ -47,6 +40,7 @@ nx = 1;% 158;
 ny = 1; %128;
 nz = 1;
 options.L = [nx,ny,nz];
+nn=nx*ny*nz;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Ccrs = upscale(Cfine, [nx,ny,nz,nt]);
@@ -143,9 +137,9 @@ permQCrs=2e-9
 permVenCrs=2e-9
 % correction factor 0.4 based on first initial ensemble
 % mean(sum(fullmeasurement)./sum(simData))
-poroArtCrs= 0.075 * (13/84)
-poroQCrs=0.075 * (7/84)
-poroVenCrs = 0.075 * (64/84)
+poroArtCrs= 0.075*41/84; %0.075 * (13/84)
+poroQCrs= 0.075*(1/84)/2; %0.075 * (7/84)
+poroVenCrs = 0.075*(42/84); %0.075 * (64/84)
 % if ~exist('priorFrog.mat','file')
 %     getPriorFrog(prm,data,options);
 % end
@@ -309,7 +303,7 @@ if strcmp(obsType,'concentration') % CHECK/FIX
     if getOption(kalmanOptions,'thinobs',0) > 0 
         % thin out to reduce amount of data
         Nr = floor(length(options.time)/kalmanOptions.thinobs);
-        if Nr > 1 && size(measurement,1) > 1
+        if  Nr > 1 && size(measurement,1) > 1
             
             CV=cov(measurement);
             [a,b]=max(diag(CV));
@@ -328,11 +322,10 @@ if strcmp(obsType,'concentration') % CHECK/FIX
             
         else
             measInd = 1:size(measurement,2);
-            % [dummy,measInd]=max(measurement);
-            % [dummy,measInd]=max(diff(measurement));
-            % measInd=measInd+1;
-            % measInd=1:measInd
+            [a,b]=max(diff(fullmeasurement'));
+            measInd=1:max(b)
         end
+        measInd=1:150; % this annihilates the lines above
         measInd = unique(measInd);
         kalmanOptions.measInd = measInd;
         measurement = measurement(:,measInd); 
@@ -348,10 +341,9 @@ kalmanOptions.obsType = obsType;
 % Define bounds     CHECK/FIX
 dim = ones(options.fieldSize,1);
 %kalmanOptions.staticVarStdDev = [1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;0.1*dim;0.1*dim;1e-5*dim];
-kalmanOptions.staticVarStdDev = 0.1*abs(kalmanOptions.staticVarMean);
-kalmanOptions.staticVarStdDev(1:7)=0.3;
-kalmanOptions.meanCorrLength = floor(options.L/2.1333);
-kalmanOptions.stdCorrLength = 1;
+
+kalmanOptions.meanCorrLength = 2; %floor(options.L/2.1333);
+kalmanOptions.stdCorrLength = 0; % floor(options.L/2.1333)/5;
 
 % Compute initial ensemble for porosity and transmissibility
 na = ones(options.numGridBlocks,1);
@@ -372,9 +364,13 @@ end
 staticVarLB = [permLB*na;permLB*na;permLB*na;permLB*na;permLB*na;permLB*na;permQLB*na;poroLB*na;poroLB*na;poroQLB*na];
 staticVarUB = [permUB*na;permUB*na;permUB*na;permUB*na;permUB*na;permUB*na;permQUB*na;poroUB*na;poroUB*na;poroQUB*na];
 kalmanOptions.threshold = 0;
-kalmanOptions.staticVarMean(1:7)=-21;
+kalmanOptions.staticVarMean(1:7)=-21; % this happens to be the closest integer to match the perfusion with maximum slope or svd.
+kalmanOptions.staticVarStdDev = [1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;1*dim;0.1*dim;0.1*dim;1e-5*dim];
 if ~exist('initial_ensemble.mat','file')
-    %ensemble = getFrogEnsemble(kalmanOptions,options);
+    % ensemble = getFrogEnsemble(kalmanOptions,options);
+    !rm simulatedDataIter*
+    !rm initial_ensemble.mat
+    !rm ensemble*.mat
     ensemble = generateInitialEnsemble(kalmanOptions,options);
     ensemble(2:7,:)=repmat(ensemble(1,:),6,1);
     ensemble = adjustVariableWithInBounds(ensemble,staticVarLB,staticVarUB);
@@ -386,7 +382,6 @@ end
 kalmanOptions.initialEnsemble = 'initial_ensemble';
 kalmanOptions.staticVarLB = staticVarLB;
 kalmanOptions.staticVarUB = staticVarUB;
-
 meanEnsemble = mean(ensemble,2);
 options = setOptions(options,meanEnsemble);
 %options.permZ = 2e-10*ones(nx,ny,nz+1,2)/options.visc0; % FIX not used but must be defined
@@ -515,4 +510,7 @@ disp('start saving initialState')
 save('initialState.mat','-v7.3');
 disp('initialState.mat is created.')
 %end
+
+
+end
 

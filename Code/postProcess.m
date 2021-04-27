@@ -22,7 +22,7 @@ end
 uc = 6000;
 
 % load "true" solution
-load('initialState.mat','prm','data','options','perfObs','nt','nxF','nyF');
+load('initialState.mat','prm','data','perfObs','nt');
 if ~existfile('upscaledProp.mat')
     if existfile('Cfinered.mat')
         load('Cfinered','Cfine')
@@ -66,8 +66,10 @@ end
 dt = mean(diff(T));
 P_svd = perfusion_svd(ca,Ccrs,dt);
 
+save resPostPros P_ms P_svd
+
 % compute initial perfusion from model
-load('initialState.mat','initialState','options','nx','ny');
+load('initialState.mat','initialState','options');
 Pinitial = initialState.rateQ;
 Pinitial(options.actnum==0) = NaN;
 Pinitial(Vcrs >= 0.5) = NaN;

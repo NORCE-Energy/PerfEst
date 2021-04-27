@@ -26,7 +26,7 @@ else
       while s > 4.2897e+09, s = round(s/1000); end
       rng(s); 
   end
-  if 1 % add condition here, given from kalmanOptions, for now it is hard coded.
+  if 0 %fieldSize > 1 % add condition here, given from kalmanOptions, for now it is hard coded.
       for i=1:kalmanOptions.ensembleSize
           numStart=1;
           numEnd=fieldSize;

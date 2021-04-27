@@ -389,7 +389,17 @@ kalmanOptions.staticVarStdDev(1:6*nn)=1;
 kalmanOptions.staticVarStdDev(6*nn+1:7*nn)=2;
 newEns=0;
 
-if existfile('./simulatedDataIter0.mat') && existfile('./resPostPros.mat')
+load('resPostPros','P_ms','uc')
+rateQ=P_ms(:)./uc;
+rateQ(isnan(rateQ))=eps;
+% formula based on simulation:
+kalmanOptions.staticVarMean(6*nn+(1:nn))=log(rateQ(:))-15.2528;
+for I=1;6; %[1 3 5]
+    kalmanOptions.staticVarMean(nn*(I-1)+(1:nn))=log(rateQ(:))-15.2528+3;
+end
+kalmanOptions.staticVarStdDev(6*nn+1:7*nn)=0.05;
+
+if 0 %existfile('./simulatedDataIter0.mat') && existfile('./resPostPros.mat')
     newEns=1;
     SD=load('simulatedDataIter0','filecontentsOut');
     E0=load('ensemble0','ensemble');
