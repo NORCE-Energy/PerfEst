@@ -371,18 +371,18 @@ kalmanOptions.threshold = 0;
 %end
 C=load('../RunPerf_1/finalState.mat')
 kalmanOptions.staticVarMean(1:7*nn)=log(C.options.permQ);
-kalmanOptions.staticVarMean(7*nn+1:8*nn)=C.options.porosityArt;
-kalmanOptions.staticVarMean(8*nn+1:9*nn)=C.options.porosityVen;
-kalmanOptions.staticVarMean(9*nn+1:10*nn)=C.options.porosityQ;
-% increase perm for arteries and veins
-%kalmanOptions.staticVarMean(1:6*nn)=log(C.options.permQ)+1;
-% increas perm for arteries further
-%kalmanOptions.staticVarMean(1:nn)=log(C.options.permQ)+3;
-%kalmanOptions.staticVarMean(2*nn+1:3*nn)=log(C.options.permQ)+3;
-%kalmanOptions.staticVarMean(4*nn+1:5*nn)=log(C.options.permQ)+3;
-%kalmanOptions.staticVarStdDev = 0.1*abs(kalmanOptions.staticVarMean);
-%kalmanOptions.staticVarStdDev(1:6*nn)=1;
-%kalmanOptions.staticVarStdDev(6*nn+1:7*nn)=0.3;
+% [timeMax,~]=max(fullmeasurement,[],2);
+% permCor=exp((min(timeMax)-timeMax)/max(abs(min(timeMax)-timeMax)));
+% for I=0:2:4
+%     kalmanOptions.staticVarMean((1:nn)+I*nn)=log(C.options.permQ)+permCor;
+% end
+F1=load('../RunPerf_1/fullMeas.mat');
+porCor=sum(fullmeasurement')'./sum(F1.fullmeasurement);
+kalmanOptions.staticVarMean(7*nn+1:8*nn)=C.options.porosityArt.*porCor;
+kalmanOptions.staticVarMean(8*nn+1:9*nn)=C.options.porosityVen.*porCor;
+kalmanOptions.staticVarMean(9*nn+1:10*nn)=C.options.porosityQ.*porCor;
+
+
 newEns=0;
 
 if existfile('resPostPros.mat')
@@ -390,32 +390,16 @@ if existfile('resPostPros.mat')
     rateQ=P_ms(:)./uc;
     rateQ(isnan(rateQ))=eps;
     % formula based on simulation:
-    kalmanOptions.staticVarMean(6*nn+(1:nn))=log(rateQ(:))-15.2538;
+    kalmanOptions.staticVarMean(6*nn+(1:nn))=log(rateQ(:))-15.25;
     %for I=1:6 %[1 3 5]
     %    kalmanOptions.staticVarMean(nn*(I-1)+(1:nn))=log(rateQ(:))-15.2521+4;
     %end
-    kalmanOptions.staticVarStdDev(6*nn+1:7*nn)=0.05;
 end
-if 0 %existfile('./simulatedDataIter0.mat') && existfile('./resPostPros.mat')
-    newEns=1;
-    SD=load('simulatedDataIter0','filecontentsOut');
-    E0=load('ensemble0','ensemble');
-    load('resPostPros','P_ms','uc')
-    permQens=E0.ensemble(6*options.numGridBlocks+1:7*options.numGridBlocks,:);
-    rateQ=SD.filecontentsOut.rateQ(options.actnum==1,:);
-    for I = 1:nn
-        if options.actnum(I)==1
-            [a,b]=min(abs(rateQ(:)*uc-P_ms(I)));
-            kalmanOptions.staticVarMean(I:2*nn:5*nn)=permQens(b)+3;
-            kalmanOptions.staticVarMean(6*nn+I)=permQens(b);
-        else
-            kalmanOptions.staticVarMean(6*nn+I)=permQLB;
-        end
-    end
-    kalmanOptions.staticVarStdDev(6*nn+1:7*nn)=0.05;
-    %clear SD E0
-end
-kalmanOptions.staticVarStdDev = [0.11*dim;0.11*dim;0.11*dim;0.11*dim;0.11*dim;0.11*dim;0.1*dim;0.01*dim;0.01*dim;1e-5*dim];
+maxPerm=max(kalmanOptions.staticVarMean(6*nn+(1:nn)));
+kalmanOptions.staticVarMean(1:6*nn)=maxPerm+0.1;
+
+kalmanOptions.staticVarStdDev = [0.11*dim;0.11*dim;0.11*dim;0.11*dim;0.11*dim;...
+    0.11*dim;0.02*dim;0.01*dim;0.01*dim;1e-5*dim];
     
 
 if ~exist('initial_ensemble.mat','file')
@@ -456,6 +440,8 @@ kalmanOptions.ES_script = 'RLM_MAC';
 kalmanOptions.useProd = 0;
 kalmanOptions.useSeismic = 0;
 kalmanOptions.useMRI = 1;
+
+
 
 if strfind(kalmanOptions.ES_script,'RLM_MAC')
     
@@ -532,9 +518,14 @@ disp('trueSolutionSmoother.mat is created.')
 % Localization
 kalmanOptions.useLocalization = 1;
 kalmanOptions.useLocalization = 0;
+% localization
+
+
+
 if getOption(kalmanOptions,'useLocalization',false)
-    %kalmanOptions.autoAdaLoc = 1;
+    kalmanOptions.autoAdaLoc = 1;
     kalmanOptions.denoisingLoc = 1;
+    %kalmanOptions.denoisingLoc = 0;
     if getOption(kalmanOptions,'autoAdaLoc',false)
         kalmanOptions.nstd = 1;
         for I = 1:size(options.staticVar,1)
