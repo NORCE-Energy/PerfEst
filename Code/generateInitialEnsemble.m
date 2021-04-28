@@ -37,18 +37,14 @@ else
                   kalmanOptions.staticVarStdDev(numStart:numEnd), ...
                   kalmanOptions.meanCorrLength,...
                   kalmanOptions.stdCorrLength,kalmanOptions);
-              if strcmp(options.staticVar(k,:),'PERMXART')
+              if strcmp(deblank(options.staticVar(k,:)),'POROART')
                   pert1=pert;
-              elseif strcmp(options.staticVar(k,:),'PERMYART')
+              elseif strcmp(deblank(options.staticVar(k,:)),'POROVEN')
                   pert2=pert;
-              elseif strcmp(options.staticVar(k,:),'PERMZART')
-                  pert3=pert;
-              elseif strcmp(deblank(options.staticVar(k,:)),'TRANQ')
-                  pert4=pert;
               end
-              if strcmp(deblank(options.staticVar(k,:)),'TRANQ')
+              if strcmp(deblank(options.staticVar(k,:)),'POROVEN')
                   ensemble(numStart:numEnd,i)=kalmanOptions.staticVarMean(numStart:numEnd)+...
-                      0.5*kalmanOptions.staticVarStdDev(numStart:numEnd).*(pert4-pert1-pert2-pert3);
+                      kalmanOptions.staticVarStdDev(numStart:numEnd).*(-0.8*pert1+0.6*pert2);
               end
               numStart=numStart+fieldSize;
               numEnd=numEnd+fieldSize;
