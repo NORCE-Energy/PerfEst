@@ -34,17 +34,11 @@ options.fineMask(argMaxFine>1) = 1;
 prsArt = prm.tree.arterial.bndpress;  % kPa % 10.6; % mmHg
 prsVen = prm.tree.venous.bndpress; % kPa  %1.6; % mmHg
 
-%Domain - scale for part cutted away
-redFakt=redGrid(1:3)./origGrid(1:3);
-xL = redFakt(1)*prm.fov(1)/1000; 
-yL = redFakt(2)*prm.fov(2)/1000; 
-zL = redFakt(3)*prm.fov(3)/1000; 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % determine the upscale level
-ny = 4 %128;
-nx = round(xL/(yL/4))% 158;
-nz = round(zL/(yL/4))
+nx = 3;% 158;
+ny = 2; %128;
+nz = 2;
 options.L = [nx,ny,nz];
 nn=nx*ny*nz;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,6 +57,15 @@ accIndicator = sum(maxIndicator,4);
 
 % time
 options.time=0:1:nt;
+
+%Domain - scale for part cutted away
+redFakt=redGrid(1:3)./origGrid(1:3);
+xL = redFakt(1)*prm.fov(1)/1000; 
+yL = redFakt(2)*prm.fov(2)/1000; 
+zL = redFakt(3)*prm.fov(3)/1000; 
+nn=nx*ny*nz;
+
+
 
 %Viscosity CHECK (consistent with paper)
 options.visc0 = 3e-3;
@@ -256,8 +259,8 @@ options.actnum = reshape(actnum,nn,1);
 options.dim = [nx,ny,nz];
 options.statevar=[];
 options.dynamicVar=char('PRESSURE','VEL');
-%options.staticVar = char('TRANXART','TRANXVEN','TRANYART','TRANYVEN','TRANZART','TRANZVEN','TRANQ','POROART','POROVEN','POROQ');
-options.staticVar = char('PERMXART','PERMXVEN','PERMYART','PERMYVEN','PERMZART','PERMZVEN','TRANQ','POROART','POROVEN','POROQ');
+options.staticVar = char('TRANXART','TRANXVEN','TRANYART','TRANYVEN','TRANZART','TRANZVEN','TRANQ','POROART','POROVEN','POROQ');
+%options.staticVar = char('PERMXART','PERMXVEN','PERMYART','PERMYVEN','PERMZART','PERMZVEN','TRANQ','POROART','POROVEN','POROQ');
 options.fieldSize = nn;
 options.useLogPerm = 1;
 options.returnStatic = 1;
@@ -368,6 +371,7 @@ kalmanOptions.threshold = 0;
 %end
 C=load('../RunPerf_1/finalState.mat')
 kalmanOptions.staticVarMean(1:7*nn)=log(C.options.permQ);
+kalmanOptions.staticVarMean(1:7*nn)=log(C.options.permQ)-log(options.visc0);
 % [timeMax,~]=max(fullmeasurement,[],2);
 % permCor=exp((min(timeMax)-timeMax)/max(abs(min(timeMax)-timeMax)));
 % for I=0:2:4
@@ -375,11 +379,9 @@ kalmanOptions.staticVarMean(1:7*nn)=log(C.options.permQ);
 % end
 F1=load('../RunPerf_1/fullMeas.mat');
 porCor=sum(fullmeasurement')'./sum(F1.fullmeasurement);
-PS=load('../RunPerf_2/finalState.mat'); % load result on previous scale
-
-kalmanOptions.staticVarMean(7*nn+1:8*nn)=mean(PS.options.porosityArt(:)).*porCor;
-kalmanOptions.staticVarMean(8*nn+1:9*nn)=mean(PS.options.porosityVen(:)).*porCor;
-kalmanOptions.staticVarMean(9*nn+1:10*nn)=mean(PS.options.porosityQ(:)).*porCor;
+kalmanOptions.staticVarMean(7*nn+1:8*nn)=C.options.porosityArt.*porCor;
+kalmanOptions.staticVarMean(8*nn+1:9*nn)=C.options.porosityVen.*porCor;
+kalmanOptions.staticVarMean(9*nn+1:10*nn)=C.options.porosityQ.*porCor;
 
 
 newEns=0;
@@ -389,15 +391,14 @@ if existfile('resPostPros.mat')
     rateQ=P_ms(:)./uc;
     rateQ(isnan(rateQ))=eps;
     % formula based on simulation:
-    kalmanOptions.staticVarMean(6*nn+(1:nn))=log(rateQ(:))-15.25;
+    kalmanOptions.staticVarMean(6*nn+(1:nn))=log(rateQ(:))-15.25-log(options.visc0);
     %for I=1:6 %[1 3 5]
     %    kalmanOptions.staticVarMean(nn*(I-1)+(1:nn))=log(rateQ(:))-15.2521+4;
     %end
 end
-%maxPerm=max(kalmanOptions.staticVarMean(6*nn+(1:nn)));
-for I=0:5
-    kalmanOptions.staticVarMean((1:nn)+I*nn)=log(rateQ(:))-15.25-0.5;%maxPerm+0.1;
-end
+maxPerm=max(kalmanOptions.staticVarMean(6*nn+(1:nn)));
+%kalmanOptions.staticVarMean(1:6*nn)=maxPerm+0.1-log(options.visc0);
+kalmanOptions.staticVarMean(1:6*nn)=maxPerm; %-log(options.visc0);
 
 kalmanOptions.staticVarStdDev = [0.11*dim;0.11*dim;0.11*dim;0.11*dim;0.11*dim;...
     0.11*dim;0.02*dim;0.01*dim;0.01*dim;1e-5*dim];
@@ -438,10 +439,11 @@ ref = CA + CQ + CV; %#ok<*NASGU>
 kalmanOptions.iterES = 1;
 % iES options can be specified there.
 kalmanOptions.ES_script = 'RLM_MAC';
-%kalmanOptions.ES_script = 'localMDA';
 kalmanOptions.useProd = 0;
 kalmanOptions.useSeismic = 0;
 kalmanOptions.useMRI = 1;
+
+
 
 if strfind(kalmanOptions.ES_script,'RLM_MAC')
     
@@ -465,8 +467,7 @@ elseif strfind(kalmanOptions.ES_script,'AGSMDA')
     %-------------------------------------------------------%
     kalmanOptions.numIter = 4;
     kalmanOptions.AGSMDA.adaptive = 1;
-    %kalmanOptions.AGSMDA.resample = 1;
-    kalmanOptions.AGSMDA.resample = 0;
+    kalmanOptions.AGSMDA.resample = 1;
     kalmanOptions.AGSMDA.h = [1.0,0.8,0.5,0.2];
     kalmanOptions.AGSMDA.lambda = ones(1,kalmanOptions.numIter)*kalmanOptions.numIter; % initial lambda value
     kalmanOptions.AGSMDA.Nefflim1 = 0;
@@ -478,11 +479,10 @@ elseif strfind(kalmanOptions.ES_script,'localMDA')
     
     kalmanOptions.numIter = 5;
     kalmanOptions.lambda = repmat(kalmanOptions.numIter, 1, kalmanOptions.numIter);
-    %    kalmanOptions.localRadius = 4;
-    %    kalmanOptions.LMapFile = 'locationMap.mat';
-    %    kalmanOptions.localTaperFunc = 'linear';
-    %    kalmanOptions.localAnalysis = true;
-    kalmanOptions.localAnalysis = false;
+    kalmanOptions.localRadius = 4;
+    kalmanOptions.LMapFile = 'locationMap.mat';
+    kalmanOptions.localTaperFunc = 'linear';
+    kalmanOptions.localAnalysis = true;
     Nr = 1;
     if isfield(kalmanOptions,'reportTime')
         T = kalmanOptions.reportTime;
@@ -491,13 +491,13 @@ elseif strfind(kalmanOptions.ES_script,'localMDA')
         end
         Nr = length(T);
     end
-    %    for I = 1:Nr
-    %        seisLocation{I}.minCoord = [ 1 1 1 ]; %#ok<*AGROW,*SAGROW>
-    %        seisLocation{I}.maxCoord = options.dim;
-    %    end
+    for I = 1:Nr
+        seisLocation{I}.minCoord = [ 1 1 1 ]; %#ok<*AGROW,*SAGROW>
+        seisLocation{I}.maxCoord = options.dim;
+    end
     options.freeparam = [];
-    %    save('../Data/seisLocation.mat', 'seisLocation');
-    %    generateLocationMap(options,kalmanOptions);
+    save('../Data/seisLocation.mat', 'seisLocation');
+    generateLocationMap(options,kalmanOptions);
    
 else
     error(['Unknown script: ', kalmanOptions.ES_script]);
@@ -520,6 +520,10 @@ disp('trueSolutionSmoother.mat is created.')
 % Localization
 kalmanOptions.useLocalization = 1;
 kalmanOptions.useLocalization = 0;
+% localization
+
+
+
 if getOption(kalmanOptions,'useLocalization',false)
     kalmanOptions.autoAdaLoc = 1;
     kalmanOptions.denoisingLoc = 1;

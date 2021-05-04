@@ -10,15 +10,15 @@ actnum = actnum(:);
 na = sum(actnum);
 if strcmp(options.staticVar(1,1:4),'TRAN')
     % problems here in 3D
-    actnumX = [zeros(ny,nz);reshape(options.actnum,nx,ny,nz)];
+    actnumX = [reshape(options.actnum,nx,ny,nz);zeros(1,ny,nz)];
     actnumX = actnumX(:);
-    actnumY = [reshape(options.actnum,nx,ny,nz);zeros(nx*nz,1)];
+    actnumY = [reshape(options.actnum,nx,ny,nz) zeros(nx,1,nz)];
     actnumY = actnumY(:);
-    actnumZ = [zeros(nx,ny);reshape(options.actnum,nx,ny,nz)];
+    actnumZ = cat(3,reshape(options.actnum,nx,ny,nz),zeros(nx,ny,1));
     actnumZ = actnumZ(:);
-    naX = sum(actnumX)
-    naY = sum(actnumY)
-    naZ = sum(actnumZ)
+    naX = sum(actnumX);
+    naY = sum(actnumY);
+    naZ = sum(actnumZ);
     nX = nx+1;
     nY = ny+1;
     nZ = nz+1;
