@@ -154,7 +154,7 @@ elseif strcmp(display,'mae')
     print('-r0',prtFile,'-dpng');
     
 end % display
-clear data
+clear data Cfine
 save resPostPros
 end
 
