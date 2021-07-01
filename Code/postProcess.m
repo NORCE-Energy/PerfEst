@@ -11,6 +11,10 @@ function [P,N,P_ms,P_svd,P_model,P_da,P_true] = postProcess(comp,display)
 if nargin < 1
     comp = [1,1,1];
 end
+if isempty(comp)
+    load('inputData','options')
+    comp=[options.nx options.ny options.nz];
+end 
 if length(comp) == 2
     comp = [comp,1];
 end
@@ -22,7 +26,9 @@ end
 uc = 6000;
 
 % load "true" solution
-load('initialState.mat','prm','data','perfObs','nt');
+load('initialState.mat','data','perfObs','nt');
+load('trimmedData','prm')
+
 if ~existfile('upscaledProp.mat')
     if existfile('Cfinered.mat')
         load('Cfinered','Cfine')
@@ -66,7 +72,19 @@ end
 dt = mean(diff(T));
 P_svd = perfusion_svd(ca,Ccrs,dt);
 
-save resPostPros P_ms P_svd
+save resPostPros P_ms P_svd P_true
+
+if strcmp(display,'classic')
+    P_ms = P_ms*uc;
+    P_svd = P_svd*uc;
+    P_true = P_true*uc;
+    P_da = [];
+    P_model = [];
+    P = [];
+    N = [];
+    save resPostPros P_ms P_svd P_true
+    return
+end
 
 % compute initial perfusion from model
 load('initialState.mat','initialState','options');
@@ -76,11 +94,15 @@ Pinitial(Vcrs >= 0.5) = NaN;
 P_model = upscale(Pinitial,comp);
 
 % compute final perfusion from model
-load('finalState.mat','state');
-Pfinal = state.rateQ;
-Pfinal(options.actnum==0) = NaN;
-Pfinal(Vcrs >= 0.5) = NaN;
-P_da = upscale(Pfinal,comp);
+if existfile('finalState.mat')
+    load('finalState.mat','state');
+    Pfinal = state.rateQ;
+    Pfinal(options.actnum==0) = NaN;
+    Pfinal(Vcrs >= 0.5) = NaN;
+    P_da = upscale(Pfinal,comp);
+else
+    P_da = NaN;
+end
 
 % convert everything
 P_true = P_true * uc;
@@ -90,7 +112,7 @@ P_model = P_model * uc;
 P_da = P_da * uc;
 
 % compute and return statistics 
-N = sum(~isnan(P_da(:)));
+N = sum(~isnan(P_model(:)));
 P(1) = sum(abs(P_true(:) - P_ms(:)),'omitnan') / N;
 P(2) = sum(abs(P_true(:) - P_svd(:)),'omitnan') / N;
 P(3) = sum(abs(P_true(:) - P_model(:)),'omitnan') / N;

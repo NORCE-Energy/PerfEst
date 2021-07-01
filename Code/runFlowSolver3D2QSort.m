@@ -69,9 +69,18 @@ while (1) %%% enabel goto hack ...
   source = -rateQ*dx*dy*dz;
   source = reshape(source,1,[]);
   
-  %External source term
-  extSource = -(sum(flux,2)+source);
-  
+  % External source term for terminal sources
+  extSource = zeros(nx,ny,nz);
+  if (isfield(options,'termSrc'))
+    i=options.termSrc.i;
+    j=options.termSrc.j;
+    k=options.termSrc.k;
+    for n=1:size(i,2)  
+      extSource(i(n),j(n),k(n)) = termSrcFlux(n);
+    end
+  end
+  extSource = reshape(extSource,1,[]);
+
   %Pore-volume 
   if isfield(options,'porosityArt')
     porosityArt = options.porosityArt;
@@ -257,7 +266,19 @@ while (1) %%% enabel goto hack ...
   sourceVen = reshape(sourceVen,1,[]);
   
   %External source term
-  extSource = -(sum(flux,2)+reshape(rateQ*dx*dy*dz,1,[]));
+  extSource = -(sum(flux,2)'+reshape(rateQ*dx*dy*dz,1,[]));
+  
+  % External source term for terminal sinks
+  extSource = zeros(nx,ny,nz);
+  if (isfield(options,'termSink'))
+    i=options.termSink.i;
+    j=options.termSink.j;
+    k=options.termSink.k;
+    for n=1:size(i,2)  
+      extSource(i(n),j(n),k(n)) = termSinkFlux(n);
+    end
+  end
+  extSource = reshape(extSource,1,[]);
   
   [tofVen, dtofVen] = upstreamTof3D(nx, ny, nz, tosVen, fluxVen, sourceVen, porVolVen, extSource);
   
@@ -276,6 +297,7 @@ while (1) %%% enabel goto hack ...
 % %   volTracerMaxVen_ = max(max(volTracerVen_,[],4),[],3);
   
   totCACVen = reshape(porVolVen,1,[]) * volTracerVen;  
+  dwnCACVen = reshape(porVolVen,1,[]) * dwnTracerVen;  
 
 
 %%% Arterial CAC
@@ -504,6 +526,7 @@ end %%% while loop to enable goto-hack (skip tracer calculations)
     state.totCACArt = totCACArt/vol;
     state.totCACCap = totCACCap/vol;
     state.totCACVen = totCACVen/vol;
+    state.dwnCACVen = dwnCACVen/vol;
      
   return
   

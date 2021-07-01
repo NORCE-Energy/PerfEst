@@ -60,12 +60,12 @@ function [tof, dtof] = upstreamTof3D(nx, ny, nz, tos,flux,source,porvol,extSourc
         fluxDown = fluxDown - flux(vxl,face);
       end
     end
-    if (extSource > tol)
-      fluxUp = fluxUp + extSource;
+    if (extSource(vxl) > tol)
+      fluxUp = fluxUp + extSource(vxl);
       %Assuming that incoming external source carries zero tof
       %fluxUpTof = fluxUpTof + 0.0*extSource;
-    elseif (extSource < tol)
-      fluxDown = fluxDown - extSource;
+    elseif (extSource(vxl) < tol)
+      fluxDown = fluxDown - extSource(vxl);
     end
     tofUp = fluxUpTof/(fluxUp+max(0.0,fluxDown-fluxUp)+tol);
     %dtof(vxl) = porvol(vxl)/(0.5*(fluxDown+fluxUp)+tol);

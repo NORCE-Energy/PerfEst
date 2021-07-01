@@ -158,7 +158,7 @@ if iter == 0
     if isfield(kalmanOptions,'append_mean') && kalmanOptions.append_mean
         ensemble = [ensemble, mean(ensemble,2)];
     end
-    save('ensemble0.mat','ensemble');
+    save('ensemble0.mat','-v7.3','ensemble');
     weights=1/size(ensemble,2).*ones(1,size(ensemble,2));
 else
     load([dir,'ensemble',num2str(iter)]); % must contain "ensemble"
@@ -183,7 +183,7 @@ if iter  == 0 && ~exist('simulatedDataIter0.mat','file')
     else
         [simData,simulatedEnsemble] = runMultiCoreSim(0,ensemble,H,kalmanOptions,options);
     end
-    save(strcat(dir,'simulatedDataIter',num2str(iter)),'simData','simulatedEnsemble',...
+    save(strcat(dir,'simulatedDataIter',num2str(iter)),'-v7.3','simData','simulatedEnsemble',...
         'numberOfFailedSimulations','filecontentsOut');
 else
     load([dir,'simulatedDataIter',num2str(iter)],'simData'); % must contain "simData"
