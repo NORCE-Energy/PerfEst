@@ -413,7 +413,7 @@ while (iter < kalmanOptions.maxIter) && (obj > dm_threshold)
     
     % save
     iter=iter+1;
-    save(strcat(dir,'ensemble',num2str(iter)),'ensemble','lambda');
+    save(strcat(dir,'ensemble',num2str(iter)),'-v7.3','ensemble','lambda');
     movefile(strcat(dir,'tmpSimData.mat'),strcat(dir,'simulatedDataIter',num2str(iter),'.mat'));
     save(strcat(dir,'objRealIter',num2str(iter)),'objReal');
     if isfield(kalmanOptions,'useSeismic') && kalmanOptions.useSeismic && ...
@@ -444,4 +444,7 @@ end
 
 fclose(fidRLM);
 
+
+
+end
 

@@ -40,14 +40,15 @@ if ~existfile('upscaledProp.mat')
     perfObs(veins==1) = 0;
 
     % upscale true data
+    Acrs = upscale(art,comp);
     Vcrs = upscale(veins,comp);
     Ccrs = upscale(Cfine, [comp,nt]);
     Ccrs(repmat(Vcrs,1,1,nt) >= 0.5) = NaN;
 
-    save('upscaledProp','Ccrs','Vcrs','perfObs')
+    save('upscaledProp','Ccrs','Vcrs','perfObs','Acrs')
 end
 
-load('upscaledProp','Ccrs','Vcrs','perfObs')
+load('upscaledProp','Ccrs','Vcrs','perfObs','Acrs')
 
 P_true = upscale(perfObs, comp);
 
@@ -72,7 +73,8 @@ end
 dt = mean(diff(T));
 P_svd = perfusion_svd(ca,Ccrs,dt);
 
-save resPostPros P_ms P_svd P_true
+%save resPostPros P_ms P_svd P_true Acrs
+save resPostPros P_ms P_svd P_true 
 
 if strcmp(display,'classic')
     P_ms = P_ms*uc;
@@ -82,7 +84,7 @@ if strcmp(display,'classic')
     P_model = [];
     P = [];
     N = [];
-    save resPostPros P_ms P_svd P_true
+    save resPostPros P_ms P_svd P_true Acrs
     return
 end
 

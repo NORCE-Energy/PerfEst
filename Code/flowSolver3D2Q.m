@@ -279,8 +279,8 @@ function [pres, velX, velY, velZ, rateQ, termSrcFlux, termSinkFlux] = flowSolver
   end 
   B(nn+1:2*nn,5) = B(nn+1:2*nn,5) + termCoeff;
   
-  msg=['--- B-mtx-diag:  min=', num2str(min(B(:,5)),'%10.5e'), ' max=', num2str(max(B(:,5)),'%10.5e')];
-  disp(msg);
+  %msg=['--- B-mtx-diag:  min=', num2str(min(B(:,5)),'%10.5e'), ' max=', num2str(max(B(:,5)),'%10.5e')];
+  %disp(msg);
   
   mtx = spdiags(B,d,2*nn,2*nn);
   
