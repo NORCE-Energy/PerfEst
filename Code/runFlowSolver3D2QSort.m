@@ -90,9 +90,9 @@ while (1) %%% enabel goto hack ...
   %tofMaxArt_ = permute(max(tofArt(:,:,:),[],3),[1,2,3])
   
   if isfield(options,'doCAC')
-     disp("### rundFlowSolver3D2QSort: do tracer calculations ###");
+     %disp("### rundFlowSolver3D2QSort: do tracer calculations ###");
   else
-     disp("### rundFlowSolver3D2QSort: skip tracer calculations ###");
+     %disp("### rundFlowSolver3D2QSort: skip tracer calculations ###");
      break; %%% skip tracer calculations
   end
   
@@ -156,6 +156,9 @@ while (1) %%% enabel goto hack ...
 %   dtofMin=min(dtof(:))
 
   mask=reshape(options.mask(:,:,:,1),1,[]);
+  if ~isfield(options,'termSrc')
+      options.termSrc = [];
+  end
   [upTracerArt, dwnTracerArt, volTracerArt] = tracerDynForward3D(nx, ny, nz, tosArt,flux,source,tracerBndCnd,tracerSourceArt,time,tof,dtof,1.0,porVolArt,mask,options.termSrc,termSrcFlux,termTracerProfile);
 % %   volTracerArt_ = reshape(volTracerArt,nx,ny,nz,[]);
 % %   volTracerArt__ = permute(volTracerArt_(1,1,1:nz,:),[4,3,1,2]);
@@ -260,6 +263,9 @@ while (1) %%% enabel goto hack ...
   termTracerProfile = [];
   
   mask=reshape(options.mask(:,:,:,2),1,[]);
+  if ~isfield(options,'termSink')
+      options.termSink = [];
+  end
   [upTracerVen, dwnTracerVen, volTracerVen] = tracerDynForward3D(nx,ny,nz, tosVen,fluxVen,sourceVen,tracerBndCndVen,tracerSourceVen,time,tofVen,dtofVen,1.0,porVolVen,mask,options.termSink,termSinkFlux,termTracerProfile);
 % %   volTracerVen_ = reshape(volTracerVen,nx,ny,nz,[]);
 % %   volTracerVen__ = permute(volTracerVen_(1,1,1:nz,:),[4,3,1,2]);
@@ -361,53 +367,53 @@ while (1) %%% enabel goto hack ...
  totCACcnv = totCACArt + totCACCap + totCACVen;
  
  
-  figure('Name','aif')%,'NumberTitle','off')
-  plot(time,gamtab(1:end-1),'k','LineWidth',2);
-  hold on
-  ax = gca;
-  ax.XMinorTick = 'on';
-  hold off
-  
-  figure('Name','MRIconv: Total contrast agent vs time for compartments')%,'NumberTitle','off')
-  plot(time,totCACArt,'b','LineWidth',2);
-  hold on
-  plot(time,totCACCap,'r','LineWidth',2);
-  plot(time,totCACVen,'g','LineWidth',2);
-  plot(time,totCACcnv,'m--','LineWidth',2);
-  ax = gca;
-  ax.XMinorTick = 'on';
-  hold off
+%   figure('Name','aif')%,'NumberTitle','off')
+%   plot(time,gamtab(1:end-1),'k','LineWidth',2);
+%   hold on
+%   ax = gca;
+%   ax.XMinorTick = 'on';
+%   hold off
 %   
-  figure('Name','MRIconv: Contrast agent vs time for selected vxl')%,'NumberTitle','off')
-  %vxl = int64(nx/2*ny*nz/2);
-  vxl=556;
-  plot(time,volTracerArt(vxl,:),'b','LineWidth',2);
-  hold on
-  plot(time,volTracerCap(vxl,:),'r','LineWidth',2);
-  plot(time,volTracerVen(vxl,:),'g','LineWidth',2);
-  volTracerTotal = volTracerArt(vxl,:)+volTracerCap(vxl,:)+volTracerVen(vxl,:);
-  plot(time,volTracerTotal,'m--','LineWidth',2);
-  ax = gca;
-  ax.XMinorTick = 'on';
-  hold off
-%   
-  figure('Name','Arterial concentration','NumberTitle','off')
-  %climsVen = [0 1.0];
-  climsVen = [0 0.3];
-  %colormap(jet(128));  
-  cMtx= reshape(volTracerArt,nx,ny,nz,[]);
-  %inc = floor(size(cMtx,4)/60);
-  inc = 2;
-  for k=1:nz
-    jj = 1;
-    for j=1:12
-      subplot(nz,12,j+(k-1)*12);
-      imagesc(cMtx(:,:,k,jj)',climsVen); %
-      jj = jj + inc;
-      set(gca,'YDir','normal')
-      %colormap(hot)
-    end
-  end
+%   figure('Name','MRIconv: Total contrast agent vs time for compartments')%,'NumberTitle','off')
+%   plot(time,totCACArt,'b','LineWidth',2);
+%   hold on
+%   plot(time,totCACCap,'r','LineWidth',2);
+%   plot(time,totCACVen,'g','LineWidth',2);
+%   plot(time,totCACcnv,'m--','LineWidth',2);
+%   ax = gca;
+%   ax.XMinorTick = 'on';
+%   hold off
+% %   
+%   figure('Name','MRIconv: Contrast agent vs time for selected vxl')%,'NumberTitle','off')
+%   %vxl = int64(nx/2*ny*nz/2);
+%   vxl=556;
+%   plot(time,volTracerArt(vxl,:),'b','LineWidth',2);
+%   hold on
+%   plot(time,volTracerCap(vxl,:),'r','LineWidth',2);
+%   plot(time,volTracerVen(vxl,:),'g','LineWidth',2);
+%   volTracerTotal = volTracerArt(vxl,:)+volTracerCap(vxl,:)+volTracerVen(vxl,:);
+%   plot(time,volTracerTotal,'m--','LineWidth',2);
+%   ax = gca;
+%   ax.XMinorTick = 'on';
+%   hold off
+% %   
+%   figure('Name','Arterial concentration','NumberTitle','off')
+%   %climsVen = [0 1.0];
+%   climsVen = [0 0.3];
+%   %colormap(jet(128));  
+%   cMtx= reshape(volTracerArt,nx,ny,nz,[]);
+%   %inc = floor(size(cMtx,4)/60);
+%   inc = 2;
+%   for k=1:nz
+%     jj = 1;
+%     for j=1:12
+%       subplot(nz,12,j+(k-1)*12);
+%       imagesc(cMtx(:,:,k,jj)',climsVen); %
+%       jj = jj + inc;
+%       set(gca,'YDir','normal')
+%       %colormap(hot)
+%     end
+%   end
 %   jj = 1;
 %   for j=1:60
 %     subplot(6,10,j);
@@ -445,21 +451,21 @@ while (1) %%% enabel goto hack ...
 %     %colormap(hot)
 %   end
 % 
-  figure('Name','Venular concentration','NumberTitle','off')
-  climsVen = [0 0.3];
-  %colormap(jet(128));  
-  cMtx= reshape(volTracerVen,nx,ny,nz,[]);
-  inc = floor(size(cMtx,4)/12);
-  for k=1:nz
-    jj = 1;
-    for j=1:12
-      subplot(nz,12,j+(k-1)*12);
-      imagesc(cMtx(:,:,k,jj)',climsVen); %
-      jj = jj + inc;
-      set(gca,'YDir','normal')
-      %colormap(hot)
-    end
-  end
+%   figure('Name','Venular concentration','NumberTitle','off')
+%   climsVen = [0 0.3];
+%   %colormap(jet(128));  
+%   cMtx= reshape(volTracerVen,nx,ny,nz,[]);
+%   inc = floor(size(cMtx,4)/12);
+%   for k=1:nz
+%     jj = 1;
+%     for j=1:12
+%       subplot(nz,12,j+(k-1)*12);
+%       imagesc(cMtx(:,:,k,jj)',climsVen); %
+%       jj = jj + inc;
+%       set(gca,'YDir','normal')
+%       %colormap(hot)
+%     end
+%   end
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %%%%%%%%%%%%  END  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

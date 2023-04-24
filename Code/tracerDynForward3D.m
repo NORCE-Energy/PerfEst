@@ -58,12 +58,14 @@ function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,f
   idUp(:,5) = (indexNatural' - nx*ny) .* (K(:) > 1) - (K(:) == 1).*(nx*(J(:)-1)+I(:));
   idUp(:,6) = (indexNatural' + nx*ny) .* (K(:) < nz) - (K(:) == nz).*(nx*(J(:)-1)+I(:));
   
-  termStructIdx = termStruct.i + nx*(termStruct.j-1) + nx*ny*(termStruct.k-1);
-  termStructEntry = zeros(1,nn);
-  if (size(termSrcFlux,2) > 0)
-    termStructEntry(termStructIdx) = 1:size(termStructIdx,2);
+  if ~isempty(termStruct) 
+      termStructIdx = termStruct.i + nx*(termStruct.j-1) + nx*ny*(termStruct.k-1);
+    termStructEntry = zeros(1,nn);
+    if (size(termSrcFlux,2) > 0)
+        termStructEntry(termStructIdx) = 1:size(termStructIdx,2);
+    end
   end
-   
+  
   for ii = 1:nn
     vxl = tos(ii);
 %     if (vxl==54077)
@@ -94,7 +96,7 @@ function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,f
       end
     end
     
-    if (termStructEntry(vxl)>0)
+    if exist('termStructEntry','var') && (termStructEntry(vxl)>0)
       if (termSrcFlux(termStructEntry(vxl)) > 0  && size(termTracerProfile,2) > 0)
         fluxUp0 = fluxUp0 + termSrcFlux(termStructEntry(vxl));
         fluxUp = fluxUp + termTracerProfile(termStructEntry(vxl),:)*termSrcFlux(termStructEntry(vxl));
@@ -143,9 +145,22 @@ function [upTracer, dwnTracer, volTracer] = tracerDynForward3D(nx, ny, nz, tos,f
         DtRes = min(Dt,max(0, dtof(vxl)-(ms-1)*Dt));
         wght = DtRes/Dt;
       
-        shiftTau = zeros(1,ms+1);
-        shiftTau(ms+1) = wght;
-        shiftTau(ms) = (1-wght);
+        diffusion = [.1 .9 .9 .1];
+        %diffusion = [1 1];
+        diffStep = length(diffusion)/2;
+        shiftTau = zeros(1,ms+diffStep);        
+        % forward
+        for I = 1:diffStep
+            shiftTau(ms+I) = diffusion(diffStep+I) * wght;
+        end
+        % backward
+        tauInd = ms;
+        for I = 0:diffStep-1
+            shiftTau(tauInd) = shiftTau(tauInd) + diffusion(diffStep-I) * (1-wght);
+            if tauInd > 1
+                tauInd = tauInd - 1;
+            end
+        end
       end
       
       sampleTau = (1.0/(ms))*ones(1,ms);

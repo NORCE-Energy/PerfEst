@@ -73,7 +73,7 @@ function [pres, velX, velY, velZ, rateQ, termSrcFlux, termSinkFlux] = flowSolver
   qCon = zeros(nx,ny,nz);
   
   if (size(options.permX,1) == nx && size(options.permY,2) == ny && size(options.permZ,3) == nz)
-    disp('### flowSolver3D2Q:  permeabilities detected ###');
+    %disp('### flowSolver3D2Q:  permeabilities detected ###');
     isTransNotPerm=0;
     mobX = options.permX./options.visc;
     mobY = options.permY./options.visc;
@@ -85,7 +85,7 @@ function [pres, velX, velY, velZ, rateQ, termSrcFlux, termSinkFlux] = flowSolver
     %qCon(:,:) = 0.5*(dy/dx+dx/dy)*mobQ;
     qCon(:,:,:) = dy*dx*dz*mobQ;
   elseif (size(options.permX,1) == nx+1 && size(options.permY,2) == ny+1 && size(options.permZ,3) == nz+1)
-    disp('### flowSolver3D2Q:  transmissibilities detected ###');
+    %disp('### flowSolver3D2Q:  transmissibilities detected ###');
     isTransNotPerm=1;
     xCon(2:nx,:,:,:) = (dy*dz/dx)*options.permX(2:nx,:,:,:);
     yCon(:,2:ny,:,:) = (dx*dz/dy)*options.permY(:,2:ny,:,:);
